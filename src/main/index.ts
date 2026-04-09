@@ -1,6 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
+import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { downloadAudio } from './ytdlp.js'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -40,13 +42,21 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC handlers — T3 이후 구현
-  ipcMain.handle('youtube:download', async (_event, _url: string, _deckId: string) => {
-    return { error: 'Not implemented yet' }
+  // T3: yt-dlp 통합
+  ipcMain.handle('youtube:download', async (event, url: string, deckId: string) => {
+    return downloadAudio(url, (percent) => {
+      event.sender.send('youtube:progress', deckId, percent)
+    })
   })
 
-  ipcMain.handle('audio:readFile', async (_event, _filePath: string) => {
-    return { error: 'Not implemented yet' }
+  // T4: 오디오 파일 읽기 (ArrayBuffer 반환)
+  ipcMain.handle('audio:readFile', async (_event, filePath: string) => {
+    try {
+      const buf = await readFile(filePath)
+      return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    } catch (err) {
+      return null
+    }
   })
 
   createWindow()
