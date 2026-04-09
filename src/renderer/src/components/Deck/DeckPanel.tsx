@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDeckStore, type DeckId } from '../../store/deckStore.js'
 import { getAudioEngine, getDeckEngine, useDeckPosition } from '../../hooks/useAudio.js'
+import { detectBpmFromBuffer } from '../../engine/BpmDetector.js'
+import PitchControl from './PitchControl.js'
+import SyncButton from './SyncButton.js'
+import WaveformCanvas from '../Waveform/WaveformCanvas.js'
 
 interface DeckPanelProps {
   deckId: DeckId
@@ -17,9 +21,10 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
   const accent = isA ? 'blue' : 'orange'
 
   const deck = useDeckStore((s) => s.decks[deckId])
-  const { setLoading, setTrack, setPlaying, setPosition, setVolume, setError } = useDeckStore()
+  const { setLoading, setTrack, setPlaying, setPosition, setVolume, setError, setBpm } = useDeckStore()
 
   const [urlInput, setUrlInput] = useState('')
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null)
   const urlRef = useRef(urlInput)
   urlRef.current = urlInput
 
@@ -55,7 +60,14 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
 
       const buffer = await getAudioEngine().loadBuffer(result.track.filePath)
       getDeckEngine(deckId).load(buffer)
-      setTrack(deckId, result.track)
+      setAudioBuffer(buffer)
+      setTrack(deckId, { ...result.track, duration: buffer.duration })
+
+      // T8: BPM detection (async, non-blocking)
+      Promise.resolve().then(() => {
+        const bpm = detectBpmFromBuffer(buffer)
+        if (bpm > 0) setBpm(deckId, Math.round(bpm * 10) / 10)
+      })
     } catch (e) {
       setError(deckId, String(e))
     }
@@ -137,9 +149,18 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
         </div>
       )}
 
-      {/* Waveform placeholder */}
-      <div className="flex-1 rounded bg-slate-900 border border-slate-800 flex items-center justify-center min-h-[60px]">
-        <span className="text-slate-700 text-xs">WAVEFORM</span>
+      {/* Waveform */}
+      <div className="flex-1 rounded bg-slate-900 border border-slate-800 overflow-hidden min-h-[60px]">
+        <WaveformCanvas
+          audioBuffer={audioBuffer}
+          position={deck.position}
+          duration={deck.track?.duration ?? 0}
+          color={isA ? '#3b82f6' : '#f97316'}
+          onSeek={(sec) => {
+            getDeckEngine(deckId).seek(sec)
+            setPosition(deckId, sec)
+          }}
+        />
       </div>
 
       {/* Time display */}
@@ -175,14 +196,12 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
         </button>
       </div>
 
-      {/* BPM + Pitch row (T8/T9 placeholder) */}
-      <div className="flex items-center justify-between px-1">
-        <div className="text-xs font-mono text-slate-500">
-          BPM {deck.bpm ? deck.bpm.toFixed(1) : '—'}
+      {/* T8/T9/T10: BPM + Pitch + Sync */}
+      <div className="border-t border-slate-800 pt-2 flex flex-col gap-2">
+        <div className="flex justify-end">
+          <SyncButton deckId={deckId} />
         </div>
-        <div className="text-xs font-mono text-slate-500">
-          {((deck.playbackRate - 1) * 100).toFixed(1)}%
-        </div>
+        <PitchControl deckId={deckId} />
       </div>
 
       {/* Volume fader */}
