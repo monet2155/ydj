@@ -34,14 +34,12 @@ function findYtDlp(): string {
 export function extractVideoId(url: string): string | null {
   try {
     const parsed = new URL(url)
-    // Standard: youtube.com/watch?v=ID
     if (parsed.hostname.includes('youtube.com')) {
       const v = parsed.searchParams.get('v')
       if (v && /^[\w-]{11}$/.test(v)) return v
     }
-    // Short: youtu.be/ID
     if (parsed.hostname === 'youtu.be') {
-      const id = parsed.pathname.slice(1)
+      const id = parsed.pathname.slice(1).split('?')[0]
       if (/^[\w-]{11}$/.test(id)) return id
     }
     return null
@@ -62,6 +60,30 @@ export function getCachedPath(videoId: string, cacheDir?: string): string | null
   return existsSync(path) ? path : null
 }
 
+/** Fetch title + duration without downloading */
+function fetchMeta(url: string, ytdlp: string): Promise<{ title: string; duration: number }> {
+  return new Promise((resolve) => {
+    const proc = spawn(ytdlp, [
+      '--simulate',
+      '--print', '%(title)s',
+      '--print', '%(duration)s',
+      '--no-playlist',
+      url
+    ])
+
+    let out = ''
+    proc.stdout.on('data', (c: Buffer) => { out += c.toString() })
+    proc.on('close', () => {
+      const lines = out.trim().split('\n').filter(Boolean)
+      resolve({
+        title: lines[0] ?? 'Unknown',
+        duration: parseFloat(lines[1] ?? '0') || 0
+      })
+    })
+    proc.on('error', () => resolve({ title: 'Unknown', duration: 0 }))
+  })
+}
+
 export function downloadAudio(
   url: string,
   onProgress?: ProgressCallback
@@ -73,71 +95,56 @@ export function downloadAudio(
       return
     }
 
-    const cached = getCachedPath(videoId)
+    const cacheDir = getCacheDir()
+    const ytdlp = findYtDlp()
+
+    const cached = getCachedPath(videoId, cacheDir)
     if (cached) {
-      resolve({
-        success: true,
-        track: { filePath: cached, title: videoId, duration: 0, videoId }
+      // Return cached file — fetch meta async (non-blocking)
+      fetchMeta(url, ytdlp).then((meta) => {
+        resolve({ success: true, track: { filePath: cached, videoId, ...meta } })
       })
       return
     }
 
-    const cacheDir = getCacheDir()
     const outputTemplate = join(cacheDir, '%(id)s.%(ext)s')
-    const ytdlp = findYtDlp()
 
     const args = [
       '--extract-audio',
       '--audio-format', 'm4a',
       '--audio-quality', '0',
       '--output', outputTemplate,
-      '--print', '%(title)s\n%(duration)s',
       '--no-playlist',
       '--newline',
+      '--progress',
       url
     ]
 
     const proc = spawn(ytdlp, args)
-
-    let stdout = ''
     let stderr = ''
 
     proc.stdout.on('data', (chunk: Buffer) => {
       const text = chunk.toString()
-      stdout += text
-
-      // Parse progress: "[download]  45.3% of ..."
-      const progressMatch = text.match(/\[download\]\s+([\d.]+)%/)
-      if (progressMatch) {
-        const percent = parseFloat(progressMatch[1])
-        onProgress?.(percent)
-      }
+      const match = text.match(/\[download\]\s+([\d.]+)%/)
+      if (match) onProgress?.(parseFloat(match[1]))
     })
 
-    proc.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString()
-    })
+    proc.stderr.on('data', (c: Buffer) => { stderr += c.toString() })
 
-    proc.on('close', (code) => {
+    proc.on('close', async (code) => {
       if (code !== 0) {
-        resolve({ success: false, error: `다운로드 실패: ${stderr.slice(0, 200)}` })
+        resolve({ success: false, error: `다운로드 실패: ${stderr.slice(0, 300)}` })
         return
       }
-
-      const lines = stdout.trim().split('\n').filter(Boolean)
-      const title = lines[0] ?? videoId
-      const duration = parseFloat(lines[1] ?? '0') || 0
 
       const filePath = join(cacheDir, `${videoId}.m4a`)
       if (!existsSync(filePath)) {
-        resolve({ success: false, error: '파일이 생성되지 않았습니다.' })
+        resolve({ success: false, error: `파일이 생성되지 않았습니다. (캐시 경로: ${filePath})` })
         return
       }
 
-      resolve({
-        success: true,
-        track: { filePath, title, duration, videoId }
-      })
+      const meta = await fetchMeta(url, ytdlp)
+      resolve({ success: true, track: { filePath, videoId, ...meta } })
     })
 
     proc.on('error', (err) => {
