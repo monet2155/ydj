@@ -18,6 +18,8 @@ export default function WaveformRow(): JSX.Element {
           position={deckA.position}
           duration={deckA.track?.duration ?? 0}
           color="#3b82f6"
+          hotCues={deckA.hotCues}
+          loop={deckA.loop}
           onSeek={(sec) => { getDeckEngine('A').seek(sec); setPosition('A', sec) }}
         />
       </div>
@@ -28,6 +30,8 @@ export default function WaveformRow(): JSX.Element {
           position={deckB.position}
           duration={deckB.track?.duration ?? 0}
           color="#f97316"
+          hotCues={deckB.hotCues}
+          loop={deckB.loop}
           onSeek={(sec) => { getDeckEngine('B').seek(sec); setPosition('B', sec) }}
         />
       </div>

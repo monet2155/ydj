@@ -6,6 +6,7 @@ import PitchControl from './PitchControl.js'
 import SyncButton from './SyncButton.js'
 import HotCueBar from './HotCueBar.js'
 import LoopControl from './LoopControl.js'
+import FxPanel from '../FX/FxPanel.js'
 
 interface DeckPanelProps {
   deckId: DeckId
@@ -173,6 +174,9 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
         />
         <span className="text-xs font-mono text-slate-500 w-8">{Math.round(deck.volume * 100)}%</span>
       </div>
+
+      {/* FX */}
+      <FxPanel deckId={deckId} />
     </div>
   )
 })

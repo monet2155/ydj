@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react'
 import { AudioEngine } from '../engine/AudioEngine.js'
 import { DeckEngine } from '../engine/DeckEngine.js'
 import { MixerEngine } from '../engine/MixerEngine.js'
+import { FxEngine } from '../engine/FxEngine.js'
 
 // Store engines on window so they survive Vite HMR module replacement.
 // Module-level `let` resets to null on HMR; window persists.
@@ -27,8 +28,20 @@ export function getDeckEngine(deckId: 'A' | 'B'): DeckEngine {
     const deck = new DeckEngine(ctx)
     getMixerEngine().connectDeck(deck, deckId)
     w[key] = deck
+    // Clear stale FxEngine so it's rebuilt with the new deck
+    delete w[`__ydj_fx_${deckId}`]
   }
   return w[key] as DeckEngine
+}
+
+export function getFxEngine(deckId: 'A' | 'B'): FxEngine {
+  const key = `__ydj_fx_${deckId}`
+  if (!w[key]) {
+    const ctx = getAudioEngine().ctx
+    const deck = getDeckEngine(deckId)
+    w[key] = new FxEngine(ctx, deck)
+  }
+  return w[key] as FxEngine
 }
 
 /** Hook: position polling for a deck — only fires callback when value changes */

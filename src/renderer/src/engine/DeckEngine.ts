@@ -161,6 +161,18 @@ export class DeckEngine {
     return this.gainNode
   }
 
+  // ── FX insert points (FxEngine rewires between these) ─────────────────────
+
+  /** Signal source before the volume fader — FxEngine disconnects this from fxOutput */
+  get fxInput(): BiquadFilterNode {
+    return this.eqHighNode
+  }
+
+  /** Volume fader input — FX chain's final output connects here */
+  get fxOutput(): GainNode {
+    return this.gainNode
+  }
+
   // ── Transport ──────────────────────────────────────────────────────────────
 
   load(buffer: AudioBuffer): void {
