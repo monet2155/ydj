@@ -3,33 +3,32 @@ import { AudioEngine } from '../engine/AudioEngine.js'
 import { DeckEngine } from '../engine/DeckEngine.js'
 import { MixerEngine } from '../engine/MixerEngine.js'
 
-// Singleton engine refs — live outside React tree
-let audioEngine: AudioEngine | null = null
-const deckEngines: Record<'A' | 'B', DeckEngine | null> = { A: null, B: null }
-let mixerEngine: MixerEngine | null = null
+// Store engines on window so they survive Vite HMR module replacement.
+// Module-level `let` resets to null on HMR; window persists.
+const w = window as Record<string, unknown>
 
 export function getAudioEngine(): AudioEngine {
-  if (!audioEngine) audioEngine = AudioEngine.getInstance()
-  return audioEngine
-}
-
-export function getDeckEngine(deckId: 'A' | 'B'): DeckEngine {
-  if (!deckEngines[deckId]) {
-    const ctx = getAudioEngine().ctx
-    deckEngines[deckId] = new DeckEngine(ctx)
-  }
-  return deckEngines[deckId]!
+  if (!w.__ydj_audio) w.__ydj_audio = AudioEngine.getInstance()
+  return w.__ydj_audio as AudioEngine
 }
 
 export function getMixerEngine(): MixerEngine {
-  if (!mixerEngine) {
+  if (!w.__ydj_mixer) {
     const ctx = getAudioEngine().ctx
-    mixerEngine = new MixerEngine(ctx)
-    // Connect decks to mixer
-    mixerEngine.connectDeck(getDeckEngine('A'), 'A')
-    mixerEngine.connectDeck(getDeckEngine('B'), 'B')
+    w.__ydj_mixer = new MixerEngine(ctx)
   }
-  return mixerEngine
+  return w.__ydj_mixer as MixerEngine
+}
+
+export function getDeckEngine(deckId: 'A' | 'B'): DeckEngine {
+  const key = `__ydj_deck_${deckId}`
+  if (!w[key]) {
+    const ctx = getAudioEngine().ctx
+    const deck = new DeckEngine(ctx)
+    getMixerEngine().connectDeck(deck, deckId)
+    w[key] = deck
+  }
+  return w[key] as DeckEngine
 }
 
 /** Hook: position polling for a deck */

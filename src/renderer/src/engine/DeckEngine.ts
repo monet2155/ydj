@@ -108,6 +108,7 @@ export class DeckEngine {
   }
 
   activateLoop(start: number, end: number): void {
+    cancelAnimationFrame(this.loopRafId) // cancel any existing tick before starting new one
     this._loopStart = start
     this._loopEnd = end
     this._loopActive = true
@@ -155,18 +156,21 @@ export class DeckEngine {
   play(): void {
     if (!this.buffer || this._isPlaying) return
 
-    this.source = this.ctx.createBufferSource()
-    this.source.buffer = this.buffer
-    this.source.playbackRate.value = this._playbackRate
-    this.source.connect(this.eqLowNode)
-    this.source.start(0, this.startOffset)
+    const source = this.ctx.createBufferSource()
+    source.buffer = this.buffer
+    source.playbackRate.value = this._playbackRate
+    source.connect(this.eqLowNode)
+    source.start(0, this.startOffset)
+    this.source = source
 
     this.startTime = this.ctx.currentTime
     this._isPlaying = true
 
-    this.source.onended = () => {
-      // Only update state if this source is still the active one
-      if (this._isPlaying) {
+    // Capture source in closure — only update state if THIS source is still active.
+    // Without this, a stale onended from an old source (e.g. mid-loop seek) would
+    // reset _isPlaying on the newly started source.
+    source.onended = () => {
+      if (this.source === source && this._isPlaying) {
         this._isPlaying = false
         this.startOffset = 0
       }

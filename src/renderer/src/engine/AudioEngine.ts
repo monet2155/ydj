@@ -10,9 +10,10 @@ export class AudioEngine {
   }
 
   static getInstance(): AudioEngine {
-    if (!AudioEngine.instance) {
-      AudioEngine.instance = new AudioEngine()
-    }
+    // Use window to survive Vite HMR (static class fields reset on module replacement)
+    const w = window as Record<string, unknown>
+    if (!w.__ydj_audio_ctx) w.__ydj_audio_ctx = new AudioEngine()
+    AudioEngine.instance = w.__ydj_audio_ctx as AudioEngine
     return AudioEngine.instance
   }
 
