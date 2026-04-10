@@ -2,18 +2,22 @@ import { useEffect, useRef, useCallback } from 'react'
 
 interface WaveformCanvasProps {
   audioBuffer: AudioBuffer | null
-  position: number       // current playback position in seconds
+  position: number
   duration: number
-  color: string          // accent color for played region
+  color: string
   onSeek?: (sec: number) => void
 }
 
-function buildPeaks(buffer: AudioBuffer, numPoints: number): Float32Array {
-  const channel = buffer.getChannelData(0)
-  const blockSize = Math.floor(channel.length / numPoints)
-  const peaks = new Float32Array(numPoints)
+// High-res peaks: one peak per 10ms
+const PEAKS_PER_SEC = 100
 
-  for (let i = 0; i < numPoints; i++) {
+function buildPeaks(buffer: AudioBuffer): Float32Array {
+  const total = Math.ceil(buffer.duration * PEAKS_PER_SEC)
+  const blockSize = Math.floor(buffer.length / total)
+  const channel = buffer.getChannelData(0)
+  const peaks = new Float32Array(total)
+
+  for (let i = 0; i < total; i++) {
     let max = 0
     for (let j = 0; j < blockSize; j++) {
       const abs = Math.abs(channel[i * blockSize + j])
@@ -24,29 +28,25 @@ function buildPeaks(buffer: AudioBuffer, numPoints: number): Float32Array {
   return peaks
 }
 
+// Seconds visible on each side of the playhead
+const VISIBLE_SECONDS = 6
+
 export default function WaveformCanvas({
   audioBuffer,
   position,
   duration,
   color,
-  onSeek
+  onSeek,
 }: WaveformCanvasProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksRef = useRef<Float32Array | null>(null)
   const bufferRef = useRef<AudioBuffer | null>(null)
 
-  // Rebuild peaks when buffer changes
   useEffect(() => {
-    if (!audioBuffer) {
-      peaksRef.current = null
-      bufferRef.current = null
-      return
-    }
+    if (!audioBuffer) { peaksRef.current = null; bufferRef.current = null; return }
     if (audioBuffer === bufferRef.current) return
     bufferRef.current = audioBuffer
-    const canvas = canvasRef.current
-    if (!canvas) return
-    peaksRef.current = buildPeaks(audioBuffer, canvas.width)
+    peaksRef.current = buildPeaks(audioBuffer)
   }, [audioBuffer])
 
   const draw = useCallback(() => {
@@ -65,40 +65,42 @@ export default function WaveformCanvas({
     const peaks = peaksRef.current
     if (!peaks) return
 
-    const progress = duration > 0 ? position / duration : 0
-    const playedX = Math.floor(progress * width)
+    const halfW = VISIBLE_SECONDS       // seconds shown on each side
+    const totalVisible = halfW * 2      // total seconds in view
+    const startTime = position - halfW
 
     for (let x = 0; x < width; x++) {
-      const peak = peaks[x] ?? 0
+      const t = startTime + (x / width) * totalVisible
+      const idx = Math.round(t * PEAKS_PER_SEC)
+      const peak = idx >= 0 && idx < peaks.length ? peaks[idx] : 0
       const barH = peak * mid * 0.9
 
-      ctx.fillStyle = x < playedX ? color : '#334155'
+      // Left of playhead = played (colored), right = unplayed (dim)
+      ctx.fillStyle = t < position ? color : '#334155'
       ctx.fillRect(x, mid - barH, 1, barH * 2)
     }
 
-    // Playhead line
+    // Center line (playhead always in the middle)
     ctx.fillStyle = '#ffffff'
-    ctx.fillRect(playedX, 0, 1, height)
-  }, [position, duration, color])
+    ctx.fillRect(Math.floor(width / 2), 0, 1, height)
+  }, [position, color])
 
-  // Redraw on every position change
-  useEffect(() => {
-    draw()
-  }, [draw])
+  useEffect(() => { draw() }, [draw])
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!onSeek || !duration) return
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
-    const sec = (x / rect.width) * duration
-    onSeek(sec)
+    const halfW = VISIBLE_SECONDS
+    const t = (position - halfW) + (x / rect.width) * (halfW * 2)
+    onSeek(Math.max(0, Math.min(duration, t)))
   }
 
   return (
     <canvas
       ref={canvasRef}
       width={600}
-      height={40}
+      height={64}
       onClick={handleClick}
       className="w-full h-full rounded cursor-pointer"
       style={{ imageRendering: 'pixelated' }}

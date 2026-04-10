@@ -187,7 +187,7 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
       />
 
       {/* Waveform strip */}
-      <div className="h-10 shrink-0 rounded bg-slate-900 border border-slate-800 overflow-hidden">
+      <div className="h-16 shrink-0 rounded bg-slate-900 border border-slate-800 overflow-hidden">
         <WaveformCanvas
           audioBuffer={audioBuffer}
           position={deck.position}
