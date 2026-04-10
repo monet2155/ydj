@@ -47,11 +47,11 @@ export default function App(): JSX.Element {
 
       {/* Middle: Deck A | Vinyl A | Mixer | Vinyl B | Deck B */}
       <div className="flex shrink-0 border-b border-slate-800" style={{ height: 300 }}>
-        <DeckPanel ref={deckARef} deckId="A" onDownloaded={fetchTracks} />
+        <DeckPanel ref={deckARef} deckId="A" />
         <DeckDisk deckId="A" />
         <MixerPanel />
         <DeckDisk deckId="B" />
-        <DeckPanel ref={deckBRef} deckId="B" onDownloaded={fetchTracks} />
+        <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
       {/* Library — always visible, takes remaining space */}

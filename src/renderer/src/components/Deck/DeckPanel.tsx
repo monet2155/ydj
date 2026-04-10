@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
 import { useDeckStore, type DeckId } from '../../store/deckStore.js'
 import { getAudioEngine, getDeckEngine, useDeckPosition } from '../../hooks/useAudio.js'
 import { setDeckBuffer } from '../../store/audioBufferStore.js'
@@ -8,7 +8,6 @@ import SyncButton from './SyncButton.js'
 
 interface DeckPanelProps {
   deckId: DeckId
-  onDownloaded?: () => void
 }
 
 export interface DeckPanelHandle {
@@ -21,28 +20,17 @@ function formatTime(sec: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel({ deckId, onDownloaded }, ref) {
+const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel({ deckId }, ref) {
   const isA = deckId === 'A'
 
   const deck = useDeckStore((s) => s.decks[deckId])
   const { setLoading, setTrack, setPlaying, setPosition, setVolume, setError, setBpm } = useDeckStore()
-
-  const [urlInput, setUrlInput] = useState('')
-  const urlRef = useRef(urlInput)
-  urlRef.current = urlInput
 
   const handlePosition = useCallback(
     (pos: number) => setPosition(deckId, pos),
     [deckId, setPosition]
   )
   useDeckPosition(deckId, handlePosition)
-
-  useEffect(() => {
-    const unsub = window.electronAPI.youtube.onProgress((id, percent) => {
-      if (id === deckId) setLoading(deckId, true, percent)
-    })
-    return unsub
-  }, [deckId, setLoading])
 
   const loadFromPath = useCallback(async (
     filePath: string,
@@ -65,21 +53,6 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
   }, [deckId, setLoading, setTrack, setBpm, setError])
 
   useImperativeHandle(ref, () => ({ loadFromPath }), [loadFromPath])
-
-  const handleLoad = async (): Promise<void> => {
-    const url = urlRef.current.trim()
-    if (!url) return
-    setLoading(deckId, true, 0)
-    try {
-      await getAudioEngine().resume()
-      const result = await window.electronAPI.youtube.download(url, deckId)
-      if (!result.success) { setError(deckId, result.error); return }
-      await loadFromPath(result.track.filePath, result.track)
-      onDownloaded?.()
-    } catch (e) {
-      setError(deckId, String(e))
-    }
-  }
 
   const handlePlayPause = async (): Promise<void> => {
     await getAudioEngine().resume()
@@ -127,32 +100,10 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
         )}
       </div>
 
-      {/* URL input */}
-      <div className="flex gap-1">
-        <input
-          type="text"
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleLoad()}
-          placeholder="YouTube URL"
-          className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:border-slate-500 min-w-0"
-        />
-        <button
-          onClick={handleLoad}
-          disabled={deck.isLoading}
-          className="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-xs font-mono disabled:opacity-50 shrink-0"
-        >
-          {deck.isLoading ? `${Math.round(deck.loadProgress)}%` : 'LOAD'}
-        </button>
-      </div>
-
-      {/* Loading bar */}
+      {/* Loading indicator */}
       {deck.isLoading && (
-        <div className="h-0.5 bg-slate-800 rounded overflow-hidden">
-          <div
-            className={`h-full transition-all ${isA ? 'bg-blue-500' : 'bg-orange-500'}`}
-            style={{ width: `${deck.loadProgress}%` }}
-          />
+        <div className={`text-xs font-mono ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+          로딩 중...
         </div>
       )}
 
