@@ -4,3 +4,9 @@ dist-electron/
 release/
 .DS_Store
 *.local
+
+# Build artifacts
+*.tsbuildinfo
+
+# Claude Code local settings
+.claude/
