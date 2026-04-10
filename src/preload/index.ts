@@ -15,6 +15,14 @@ export type DownloadResult =
   | { success: true; track: TrackInfo }
   | { success: false; error: string }
 
+export interface LibraryTrack {
+  videoId: string
+  title: string
+  duration: number
+  filePath: string
+  addedAt: number
+}
+
 export interface ElectronAPI {
   youtube: {
     download: (url: string, deckId: DeckId) => Promise<DownloadResult>
@@ -22,6 +30,9 @@ export interface ElectronAPI {
   }
   audio: {
     readFile: (filePath: string) => Promise<ArrayBuffer | null>
+  }
+  library: {
+    list: () => Promise<LibraryTrack[]>
   }
 }
 
@@ -37,6 +48,9 @@ const api: ElectronAPI = {
   },
   audio: {
     readFile: (filePath) => ipcRenderer.invoke('audio:readFile', filePath)
+  },
+  library: {
+    list: () => ipcRenderer.invoke('library:list')
   }
 }
 

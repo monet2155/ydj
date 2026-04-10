@@ -3,6 +3,7 @@ import { join } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { downloadAudio } from './ytdlp.js'
+import { readLibrary, saveTrack } from './library.js'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -44,10 +45,16 @@ app.whenReady().then(() => {
 
   // T3: yt-dlp 통합
   ipcMain.handle('youtube:download', async (event, url: string, deckId: string) => {
-    return downloadAudio(url, (percent) => {
+    const result = await downloadAudio(url, (percent) => {
       event.sender.send('youtube:progress', deckId, percent)
     })
+    if (result.success) {
+      saveTrack(result.track)
+    }
+    return result
   })
+
+  ipcMain.handle('library:list', () => readLibrary())
 
   // T4: 오디오 파일 읽기 (ArrayBuffer 반환)
   ipcMain.handle('audio:readFile', async (_event, filePath: string) => {
