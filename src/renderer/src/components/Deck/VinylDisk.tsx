@@ -1,0 +1,147 @@
+import { useEffect, useRef } from 'react'
+
+interface VinylDiskProps {
+  isPlaying: boolean
+  color: string    // '#3b82f6' | '#f97316'
+  label: string    // 'A' | 'B'
+  onScratchStart: () => void
+  onScratch: (deltaSeconds: number) => void
+  onScratchEnd: () => void
+}
+
+// 33 RPM → degrees per millisecond
+const DEG_PER_MS = (33 * 360) / 60_000
+
+export default function VinylDisk({
+  isPlaying,
+  color,
+  label,
+  onScratchStart,
+  onScratch,
+  onScratchEnd,
+}: VinylDiskProps): JSX.Element {
+  const diskRef = useRef<HTMLDivElement>(null)
+  const angleRef = useRef(0)
+  const isDraggingRef = useRef(false)
+  const lastMouseAngleRef = useRef(0)
+  const rafRef = useRef(0)
+  const isPlayingRef = useRef(isPlaying)
+  isPlayingRef.current = isPlaying
+
+  // Rotation loop — runs when playing and not dragging
+  useEffect(() => {
+    if (!isPlaying) return
+
+    let lastTime: number | null = null
+
+    const tick = (now: number): void => {
+      if (!isDraggingRef.current) {
+        if (lastTime !== null) {
+          angleRef.current = (angleRef.current + DEG_PER_MS * (now - lastTime)) % 360
+          if (diskRef.current) {
+            diskRef.current.style.transform = `rotate(${angleRef.current}deg)`
+          }
+        }
+        lastTime = now
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [isPlaying])
+
+  // Mouse angle helper
+  const getMouseAngle = (e: MouseEvent): number => {
+    const rect = diskRef.current!.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    return Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI)
+  }
+
+  // Attach global mouse handlers
+  useEffect(() => {
+    const onMove = (e: MouseEvent): void => {
+      if (!isDraggingRef.current) return
+
+      const newAngle = getMouseAngle(e)
+      let delta = newAngle - lastMouseAngleRef.current
+      // Wrap-around correction
+      if (delta > 180) delta -= 360
+      if (delta < -180) delta += 360
+
+      angleRef.current = (angleRef.current + delta + 360) % 360
+      if (diskRef.current) {
+        diskRef.current.style.transform = `rotate(${angleRef.current}deg)`
+      }
+      lastMouseAngleRef.current = newAngle
+
+      // 1 full revolution (360°) = 60/33 seconds at 33 RPM
+      const deltaSeconds = (delta / 360) * (60 / 33)
+      onScratch(deltaSeconds)
+    }
+
+    const onUp = (): void => {
+      if (!isDraggingRef.current) return
+      isDraggingRef.current = false
+      onScratchEnd()
+    }
+
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [onScratch, onScratchEnd])
+
+  const handleMouseDown = (e: React.MouseEvent): void => {
+    e.preventDefault()
+    isDraggingRef.current = true
+    lastMouseAngleRef.current = getMouseAngle(e.nativeEvent)
+    onScratchStart()
+  }
+
+  return (
+    <div className="relative w-full aspect-square max-w-[200px] mx-auto select-none">
+      {/* Record body — rotation applied via ref */}
+      <div
+        ref={diskRef}
+        className="absolute inset-0 rounded-full cursor-grab active:cursor-grabbing"
+        style={{
+          background: 'radial-gradient(circle, #1e2433 60%, #0f1117 100%)',
+          boxShadow: '0 0 0 2px #1e293b, 0 4px 24px rgba(0,0,0,0.6)',
+        }}
+        onMouseDown={handleMouseDown}
+      >
+        {/* Groove rings */}
+        {[30, 38, 46, 54, 62, 70, 78].map((r) => (
+          <div
+            key={r}
+            className="absolute rounded-full border border-slate-700/40"
+            style={{ inset: `${r / 2}%` }}
+          />
+        ))}
+
+        {/* Center label */}
+        <div
+          className="absolute rounded-full flex items-center justify-center"
+          style={{ inset: '35%', backgroundColor: color, opacity: 0.9 }}
+        >
+          <span
+            className="text-white font-black text-lg tracking-widest"
+            style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
+          >
+            {label}
+          </span>
+        </div>
+
+        {/* Spindle */}
+        <div
+          className="absolute w-2 h-2 rounded-full bg-slate-900"
+          style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        />
+      </div>
+    </div>
+  )
+}

@@ -5,6 +5,7 @@ import { detectBpmFromBuffer } from '../../engine/BpmDetector.js'
 import PitchControl from './PitchControl.js'
 import SyncButton from './SyncButton.js'
 import WaveformCanvas from '../Waveform/WaveformCanvas.js'
+import VinylDisk from './VinylDisk.js'
 
 interface DeckPanelProps {
   deckId: DeckId
@@ -27,6 +28,9 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null)
   const urlRef = useRef(urlInput)
   urlRef.current = urlInput
+  const scratchWasPlayingRef = useRef(false)
+  const deckRef = useRef(deck)
+  deckRef.current = deck
 
   // Position polling
   const handlePosition = useCallback(
@@ -84,6 +88,29 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
       setPlaying(deckId, true)
     }
   }
+
+  const handleScratchStart = useCallback((): void => {
+    scratchWasPlayingRef.current = deckRef.current.isPlaying
+    if (deckRef.current.isPlaying) {
+      getDeckEngine(deckId).pause()
+      setPlaying(deckId, false)
+    }
+  }, [deckId, setPlaying])
+
+  const handleScratch = useCallback((deltaSeconds: number): void => {
+    const current = deckRef.current
+    if (!current.track) return
+    const newPos = Math.max(0, Math.min(current.track.duration, current.position + deltaSeconds))
+    getDeckEngine(deckId).seek(newPos)
+    setPosition(deckId, newPos)
+  }, [deckId, setPosition])
+
+  const handleScratchEnd = useCallback((): void => {
+    if (scratchWasPlayingRef.current) {
+      getDeckEngine(deckId).play()
+      setPlaying(deckId, true)
+    }
+  }, [deckId, setPlaying])
 
   const handleCue = (): void => {
     const engine = getDeckEngine(deckId)
@@ -149,8 +176,18 @@ export default function DeckPanel({ deckId }: DeckPanelProps): JSX.Element {
         </div>
       )}
 
-      {/* Waveform */}
-      <div className="flex-1 rounded bg-slate-900 border border-slate-800 overflow-hidden min-h-[60px]">
+      {/* Vinyl disk */}
+      <VinylDisk
+        isPlaying={deck.isPlaying}
+        color={isA ? '#3b82f6' : '#f97316'}
+        label={deckId}
+        onScratchStart={handleScratchStart}
+        onScratch={handleScratch}
+        onScratchEnd={handleScratchEnd}
+      />
+
+      {/* Waveform strip */}
+      <div className="h-10 shrink-0 rounded bg-slate-900 border border-slate-800 overflow-hidden">
         <WaveformCanvas
           audioBuffer={audioBuffer}
           position={deck.position}

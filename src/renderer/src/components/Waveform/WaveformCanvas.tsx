@@ -98,7 +98,7 @@ export default function WaveformCanvas({
     <canvas
       ref={canvasRef}
       width={600}
-      height={80}
+      height={40}
       onClick={handleClick}
       className="w-full h-full rounded cursor-pointer"
       style={{ imageRendering: 'pixelated' }}
