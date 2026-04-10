@@ -34,6 +34,10 @@ export interface ElectronAPI {
   library: {
     list: () => Promise<LibraryTrack[]>
   }
+  hotcues: {
+    load: (videoId: string) => Promise<(number | null)[]>
+    save: (videoId: string, slots: (number | null)[]) => Promise<void>
+  }
 }
 
 const api: ElectronAPI = {
@@ -51,6 +55,10 @@ const api: ElectronAPI = {
   },
   library: {
     list: () => ipcRenderer.invoke('library:list')
+  },
+  hotcues: {
+    load: (videoId) => ipcRenderer.invoke('hotcues:load', videoId),
+    save: (videoId, slots) => ipcRenderer.invoke('hotcues:save', videoId, slots)
   }
 }
 

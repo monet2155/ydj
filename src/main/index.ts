@@ -4,6 +4,7 @@ import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { downloadAudio } from './ytdlp.js'
 import { readLibrary, saveTrack } from './library.js'
+import { loadHotCues, saveHotCues } from './hotcues.js'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -55,6 +56,8 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('library:list', () => readLibrary())
+  ipcMain.handle('hotcues:load', (_e, videoId: string) => loadHotCues(videoId))
+  ipcMain.handle('hotcues:save', (_e, videoId: string, slots: (number | null)[]) => { saveHotCues(videoId, slots) })
 
   // T4: 오디오 파일 읽기 (ArrayBuffer 반환)
   ipcMain.handle('audio:readFile', async (_event, filePath: string) => {

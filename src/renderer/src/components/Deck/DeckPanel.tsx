@@ -5,6 +5,8 @@ import { setDeckBuffer } from '../../store/audioBufferStore.js'
 import { detectBpmFromBuffer } from '../../engine/BpmDetector.js'
 import PitchControl from './PitchControl.js'
 import SyncButton from './SyncButton.js'
+import HotCueBar from './HotCueBar.js'
+import LoopControl from './LoopControl.js'
 
 interface DeckPanelProps {
   deckId: DeckId
@@ -24,7 +26,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
   const isA = deckId === 'A'
 
   const deck = useDeckStore((s) => s.decks[deckId])
-  const { setLoading, setTrack, setPlaying, setPosition, setVolume, setError, setBpm } = useDeckStore()
+  const { setLoading, setTrack, setPlaying, setPosition, setVolume, setError, setBpm, setHotCues } = useDeckStore()
 
   const handlePosition = useCallback(
     (pos: number) => setPosition(deckId, pos),
@@ -43,6 +45,9 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       getDeckEngine(deckId).load(buffer)
       setDeckBuffer(deckId, buffer)
       setTrack(deckId, { filePath, ...meta, duration: buffer.duration })
+      if (meta.videoId) {
+        window.electronAPI.hotcues.load(meta.videoId).then((slots) => setHotCues(deckId, slots))
+      }
       Promise.resolve().then(() => {
         const bpm = detectBpmFromBuffer(buffer)
         if (bpm > 0) setBpm(deckId, Math.round(bpm * 10) / 10)
@@ -137,6 +142,12 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
           {deck.isPlaying ? '⏸' : '▶'}
         </button>
       </div>
+
+      {/* Hot Cues */}
+      <HotCueBar deckId={deckId} />
+
+      {/* Loop */}
+      <LoopControl deckId={deckId} />
 
       {/* SYNC + Pitch */}
       <div className="border-t border-slate-800 pt-2 flex flex-col gap-2">

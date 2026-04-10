@@ -10,6 +10,15 @@ export interface TrackInfo {
   filePath: string
 }
 
+export interface EqState {
+  low: number   // dB, -40 to +6
+  mid: number
+  high: number
+  lowKill: boolean
+  midKill: boolean
+  highKill: boolean
+}
+
 export interface DeckState {
   track: TrackInfo | null
   isLoading: boolean
@@ -20,6 +29,9 @@ export interface DeckState {
   playbackRate: number
   bpm: number | null
   error: string | null
+  eq: EqState
+  hotCues: (number | null)[]  // 8 slots, seconds
+  loop: { active: boolean; start: number | null; end: number | null }
 }
 
 interface DeckStore {
@@ -32,7 +44,14 @@ interface DeckStore {
   setPlaybackRate: (deckId: DeckId, rate: number) => void
   setBpm: (deckId: DeckId, bpm: number) => void
   setError: (deckId: DeckId, error: string | null) => void
+  setEq: (deckId: DeckId, band: 'low' | 'mid' | 'high', db: number) => void
+  setEqKill: (deckId: DeckId, band: 'low' | 'mid' | 'high', kill: boolean) => void
+  setHotCues: (deckId: DeckId, slots: (number | null)[]) => void
+  setHotCue: (deckId: DeckId, index: number, sec: number | null) => void
+  setLoop: (deckId: DeckId, loop: { active: boolean; start: number | null; end: number | null }) => void
 }
+
+const defaultEq: EqState = { low: 0, mid: 0, high: 0, lowKill: false, midKill: false, highKill: false }
 
 const defaultDeck: DeckState = {
   track: null,
@@ -43,7 +62,10 @@ const defaultDeck: DeckState = {
   volume: 1,
   playbackRate: 1,
   bpm: null,
-  error: null
+  error: null,
+  eq: { ...defaultEq },
+  hotCues: Array(8).fill(null),
+  loop: { active: false, start: null, end: null }
 }
 
 export const useDeckStore = create<DeckStore>((set) => ({
@@ -87,5 +109,28 @@ export const useDeckStore = create<DeckStore>((set) => ({
   setError: (deckId, error) =>
     set((s) => ({
       decks: { ...s.decks, [deckId]: { ...s.decks[deckId], error, isLoading: false } }
-    }))
+    })),
+
+  setEq: (deckId, band, db) =>
+    set((s) => ({
+      decks: { ...s.decks, [deckId]: { ...s.decks[deckId], eq: { ...s.decks[deckId].eq, [band]: db } } }
+    })),
+
+  setEqKill: (deckId, band, kill) =>
+    set((s) => ({
+      decks: { ...s.decks, [deckId]: { ...s.decks[deckId], eq: { ...s.decks[deckId].eq, [`${band}Kill`]: kill } } }
+    })),
+
+  setHotCues: (deckId, slots) =>
+    set((s) => ({ decks: { ...s.decks, [deckId]: { ...s.decks[deckId], hotCues: slots } } })),
+
+  setHotCue: (deckId, index, sec) =>
+    set((s) => {
+      const slots = [...s.decks[deckId].hotCues]
+      slots[index] = sec
+      return { decks: { ...s.decks, [deckId]: { ...s.decks[deckId], hotCues: slots } } }
+    }),
+
+  setLoop: (deckId, loop) =>
+    set((s) => ({ decks: { ...s.decks, [deckId]: { ...s.decks[deckId], loop } } }))
 }))
