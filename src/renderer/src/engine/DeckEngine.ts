@@ -27,6 +27,7 @@ export class DeckEngine {
   private _loopEnd: number | null = null
   private _loopActive = false
   private loopRafId = 0
+  private loopTimerId = 0
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx
@@ -108,7 +109,8 @@ export class DeckEngine {
   }
 
   activateLoop(start: number, end: number): void {
-    cancelAnimationFrame(this.loopRafId) // cancel any existing tick before starting new one
+    clearTimeout(this.loopTimerId)
+    cancelAnimationFrame(this.loopRafId)
     this._loopStart = start
     this._loopEnd = end
     this._loopActive = true
@@ -117,15 +119,29 @@ export class DeckEngine {
 
   deactivateLoop(): void {
     this._loopActive = false
+    clearTimeout(this.loopTimerId)
     cancelAnimationFrame(this.loopRafId)
   }
 
   private _tickLoop(): void {
     if (!this._loopActive || this._loopStart === null || this._loopEnd === null) return
-    if (this.position >= this._loopEnd) {
+
+    const remaining = this._loopEnd - this.position
+    if (remaining <= 0) {
       this.seek(this._loopStart)
+      this.loopRafId = requestAnimationFrame(() => this._tickLoop())
+      return
     }
-    this.loopRafId = requestAnimationFrame(() => this._tickLoop())
+
+    // Sleep until 50ms before loop end, then switch to rAF for precision
+    const sleepMs = remaining * 1000 - 50
+    if (sleepMs > 50) {
+      this.loopTimerId = window.setTimeout(() => {
+        this.loopRafId = requestAnimationFrame(() => this._tickLoop())
+      }, sleepMs)
+    } else {
+      this.loopRafId = requestAnimationFrame(() => this._tickLoop())
+    }
   }
 
   // ── EQ ─────────────────────────────────────────────────────────────────────

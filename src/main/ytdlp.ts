@@ -107,7 +107,7 @@ export function downloadAudio(
       return
     }
 
-    const outputTemplate = join(cacheDir, '%(id)s.%(ext)s')
+    const outputTemplate = join(cacheDir, '%(id)s.m4a')
 
     const args = [
       '--extract-audio',

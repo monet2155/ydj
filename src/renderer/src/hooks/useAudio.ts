@@ -31,7 +31,7 @@ export function getDeckEngine(deckId: 'A' | 'B'): DeckEngine {
   return w[key] as DeckEngine
 }
 
-/** Hook: position polling for a deck */
+/** Hook: position polling for a deck — only fires callback when value changes */
 export function useDeckPosition(
   deckId: 'A' | 'B',
   onPosition: (pos: number) => void
@@ -40,9 +40,14 @@ export function useDeckPosition(
 
   useEffect(() => {
     const deck = getDeckEngine(deckId)
+    let lastPos = -1
 
     const tick = (): void => {
-      onPosition(deck.position)
+      const pos = deck.position
+      if (pos !== lastPos) {
+        lastPos = pos
+        onPosition(pos)
+      }
       rafRef.current = requestAnimationFrame(tick)
     }
 

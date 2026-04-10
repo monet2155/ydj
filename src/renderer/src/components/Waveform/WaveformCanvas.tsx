@@ -55,7 +55,20 @@ export default function WaveformCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const { width, height } = canvas
+    // HiDPI: scale canvas backing store to device pixel ratio
+    const dpr = window.devicePixelRatio || 1
+    const cssWidth = canvas.offsetWidth || 600
+    const cssHeight = canvas.offsetHeight || 64
+    const pxWidth = Math.round(cssWidth * dpr)
+    const pxHeight = Math.round(cssHeight * dpr)
+    if (canvas.width !== pxWidth || canvas.height !== pxHeight) {
+      canvas.width = pxWidth
+      canvas.height = pxHeight
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    const width = cssWidth
+    const height = cssHeight
     const mid = height / 2
 
     ctx.clearRect(0, 0, width, height)
@@ -99,11 +112,8 @@ export default function WaveformCanvas({
   return (
     <canvas
       ref={canvasRef}
-      width={600}
-      height={64}
       onClick={handleClick}
       className="w-full h-full rounded cursor-pointer"
-      style={{ imageRendering: 'pixelated' }}
     />
   )
 }

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useImperativeHandle, useRef, forwardRef } from 
 import { useDeckStore, type DeckId } from '../../store/deckStore.js'
 import { getAudioEngine, getDeckEngine, useDeckPosition } from '../../hooks/useAudio.js'
 import { setDeckBuffer } from '../../store/audioBufferStore.js'
-import { detectBpmFromBuffer } from '../../engine/BpmDetector.js'
 import PitchControl from './PitchControl.js'
 import SyncButton from './SyncButton.js'
 import HotCueBar from './HotCueBar.js'
@@ -46,12 +45,18 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       setDeckBuffer(deckId, buffer)
       setTrack(deckId, { filePath, ...meta, duration: buffer.duration })
       if (meta.videoId) {
-        window.electronAPI.hotcues.load(meta.videoId).then((slots) => setHotCues(deckId, slots))
+        window.electronAPI.hotcues.load(meta.videoId)
+          .then((slots) => setHotCues(deckId, slots))
+          .catch(() => { /* hot cue load failed — non-critical */ })
       }
-      Promise.resolve().then(() => {
-        const bpm = detectBpmFromBuffer(buffer)
-        if (bpm > 0) setBpm(deckId, Math.round(bpm * 10) / 10)
-      })
+      const worker = new Worker(new URL('../../engine/BpmWorker.ts', import.meta.url), { type: 'module' })
+      const samples = buffer.getChannelData(0).slice() // copy before transfer
+      worker.postMessage({ samples, sampleRate: buffer.sampleRate }, [samples.buffer])
+      worker.onmessage = (e: MessageEvent<{ bpm: number }>): void => {
+        if (e.data.bpm > 0) setBpm(deckId, Math.round(e.data.bpm * 10) / 10)
+        worker.terminate()
+      }
+      worker.onerror = (): void => worker.terminate()
     } catch (e) {
       setError(deckId, String(e))
     }

@@ -1,8 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { join, resolve, sep } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { downloadAudio } from './ytdlp.js'
+import { downloadAudio, getCacheDir } from './ytdlp.js'
 import { readLibrary, saveTrack } from './library.js'
 import { loadHotCues, saveHotCues } from './hotcues.js'
 
@@ -59,12 +59,15 @@ app.whenReady().then(() => {
   ipcMain.handle('hotcues:load', (_e, videoId: string) => loadHotCues(videoId))
   ipcMain.handle('hotcues:save', (_e, videoId: string, slots: (number | null)[]) => { saveHotCues(videoId, slots) })
 
-  // T4: 오디오 파일 읽기 (ArrayBuffer 반환)
+  // T4: 오디오 파일 읽기 (ArrayBuffer 반환) — cache dir 외 경로 차단
   ipcMain.handle('audio:readFile', async (_event, filePath: string) => {
+    const abs = resolve(filePath)
+    const cacheDir = getCacheDir()
+    if (!abs.startsWith(cacheDir + sep)) return null
     try {
-      const buf = await readFile(filePath)
+      const buf = await readFile(abs)
       return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
-    } catch (err) {
+    } catch {
       return null
     }
   })

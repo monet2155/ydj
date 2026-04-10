@@ -34,7 +34,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
           <div key={band} className="flex flex-col items-center gap-1">
             <Knob
               value={kill ? -40 : eq[band]}
-              min={-12}
+              min={-40}
               max={6}
               defaultValue={0}
               label={band.toUpperCase()}

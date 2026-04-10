@@ -34,12 +34,13 @@ export class MixerEngine {
 
   /**
    * crossfader: 0 = full A, 0.5 = equal, 1 = full B
-   * Linear curve
+   * Constant-power (cos/sin) curve — no center dip
    */
   setCrossfader(value: number): void {
     const v = Math.max(0, Math.min(1, value))
-    this.masterGainA.gain.value = 1 - v
-    this.masterGainB.gain.value = v
+    const angle = v * Math.PI / 2
+    this.masterGainA.gain.value = Math.cos(angle)
+    this.masterGainB.gain.value = Math.sin(angle)
   }
 
   setMasterVolume(value: number): void {

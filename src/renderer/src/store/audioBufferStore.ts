@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react'
 import type { DeckId } from './deckStore.js'
 
-const buffers: Record<string, AudioBuffer | null> = { A: null, B: null }
-const subscribers = new Set<() => void>()
+// Store on window to survive Vite HMR module replacement
+const w = window as Record<string, unknown>
+if (!w.__ydj_bufs) w.__ydj_bufs = { A: null, B: null }
+if (!w.__ydj_buf_subs) w.__ydj_buf_subs = new Set<() => void>()
+
+const buffers = w.__ydj_bufs as Record<string, AudioBuffer | null>
+const subscribers = w.__ydj_buf_subs as Set<() => void>
 
 export function setDeckBuffer(id: DeckId, buf: AudioBuffer | null): void {
   buffers[id] = buf

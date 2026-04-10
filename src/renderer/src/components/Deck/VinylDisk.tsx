@@ -32,15 +32,13 @@ export default function VinylDisk({
   useEffect(() => {
     if (!isPlaying) return
 
-    let lastTime: number | null = null
+    let lastTime = performance.now()
 
     const tick = (now: number): void => {
       if (!isDraggingRef.current) {
-        if (lastTime !== null) {
-          angleRef.current = (angleRef.current + DEG_PER_MS * (now - lastTime)) % 360
-          if (diskRef.current) {
-            diskRef.current.style.transform = `rotate(${angleRef.current}deg)`
-          }
+        angleRef.current = (angleRef.current + DEG_PER_MS * (now - lastTime)) % 360
+        if (diskRef.current) {
+          diskRef.current.style.transform = `rotate(${angleRef.current}deg)`
         }
         lastTime = now
       }

@@ -14,10 +14,10 @@ export default function LoopControl({ deckId }: LoopControlProps): JSX.Element {
   const color = isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
   const activeColor = isA ? 'bg-blue-500 ring-2 ring-blue-300' : 'bg-orange-500 ring-2 ring-orange-300'
 
-  const bpm = deck.bpm ?? 128
+  const bpm = deck.bpm
 
   const activateAutoLoop = (beats: number): void => {
-    if (!deck.track) return
+    if (!deck.track || bpm === null) return
     const secPerBeat = 60 / bpm
     const loopLen = beats * secPerBeat
     const start = deck.position
@@ -48,7 +48,7 @@ export default function LoopControl({ deckId }: LoopControlProps): JSX.Element {
           <button
             key={beats}
             onClick={() => activateAutoLoop(beats)}
-            disabled={!deck.track}
+            disabled={!deck.track || deck.bpm === null}
             className={[
               'flex-1 py-1 rounded text-[9px] font-bold font-mono disabled:opacity-30',
               deck.loop.active ? color : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
