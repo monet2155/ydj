@@ -10,3 +10,4 @@ release/
 
 # Claude Code local settings
 .claude/
+docs
