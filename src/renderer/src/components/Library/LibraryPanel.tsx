@@ -90,7 +90,6 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
       {/* Input bar */}
       <div className="shrink-0 px-3 py-2 border-b border-slate-800 flex flex-col gap-1.5">
         <div className="flex gap-2 items-center">
-          <span className="text-xs font-bold tracking-widest text-slate-500 shrink-0">LIBRARY</span>
           <input
             type="text"
             value={input}

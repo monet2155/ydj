@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import DeckPanel, { type DeckPanelHandle } from './components/Deck/DeckPanel'
 import VinylDisk from './components/Deck/VinylDisk'
 import MixerPanel from './components/Mixer/MixerPanel'
@@ -39,6 +39,30 @@ export default function App(): JSX.Element {
     ref.current?.loadFromPath(filePath, meta)
   }
 
+  // Library open/resize state
+  const [libOpen, setLibOpen] = useState(true)
+  const [libHeight, setLibHeight] = useState(200)
+  const dragState = useRef<{ startY: number; startH: number } | null>(null)
+
+  const onDragMove = useCallback((e: MouseEvent) => {
+    if (!dragState.current) return
+    const delta = dragState.current.startY - e.clientY  // drag up → taller
+    setLibHeight(Math.max(80, Math.min(520, dragState.current.startH + delta)))
+  }, [])
+
+  const onDragEnd = useCallback(() => {
+    dragState.current = null
+    document.removeEventListener('mousemove', onDragMove)
+    document.removeEventListener('mouseup', onDragEnd)
+  }, [onDragMove])
+
+  const onDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    dragState.current = { startY: e.clientY, startH: libHeight }
+    document.addEventListener('mousemove', onDragMove)
+    document.addEventListener('mouseup', onDragEnd)
+  }, [libHeight, onDragMove, onDragEnd])
+
   // Wire queue auto-load: when a deck finishes naturally, load next from queue
   useEffect(() => {
     const decks: DeckId[] = ['A', 'B']
@@ -76,9 +100,42 @@ export default function App(): JSX.Element {
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
-      {/* Library — always visible, takes remaining space */}
-      <div className="flex-1 min-h-0 bg-[#0a0d14]">
-        <LibraryPanel onLoad={handleLibraryLoad} />
+      {/* Library — collapsible + resizable */}
+      <div
+        className="shrink-0 bg-[#0a0d14] flex flex-col overflow-hidden"
+        style={{ height: libOpen ? libHeight : 28 }}
+      >
+        {/* Drag handle + header bar */}
+        <div
+          className="h-7 shrink-0 flex items-center px-3 gap-2 border-t border-slate-800 select-none cursor-ns-resize group"
+          onMouseDown={onDragStart}
+        >
+          {/* Grip dots */}
+          <div className="flex flex-col gap-0.5 opacity-30 group-hover:opacity-60">
+            {[0, 1].map((r) => (
+              <div key={r} className="flex gap-0.5">
+                {[0, 1, 2].map((c) => <div key={c} className="w-0.5 h-0.5 rounded-full bg-slate-400" />)}
+              </div>
+            ))}
+          </div>
+          <span className="text-[10px] font-bold tracking-widest text-slate-600 flex-1 pointer-events-none">
+            LIBRARY
+          </span>
+          <button
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => setLibOpen((v) => !v)}
+            className="text-slate-600 hover:text-slate-300 text-xs px-1"
+          >
+            {libOpen ? '▼' : '▲'}
+          </button>
+        </div>
+
+        {/* Panel content */}
+        {libOpen && (
+          <div className="flex-1 min-h-0">
+            <LibraryPanel onLoad={handleLibraryLoad} />
+          </div>
+        )}
       </div>
     </div>
   )
