@@ -6,7 +6,8 @@ interface SyncButtonProps {
 }
 
 export default function SyncButton({ deckId }: SyncButtonProps): JSX.Element {
-  const masterId: DeckId = deckId === 'A' ? 'B' : 'A'
+  const isA = deckId === 'A'
+  const masterId: DeckId = isA ? 'B' : 'A'
 
   const thisDeck = useDeckStore((s) => s.decks[deckId])
   const masterDeck = useDeckStore((s) => s.decks[masterId])
@@ -16,8 +17,12 @@ export default function SyncButton({ deckId }: SyncButtonProps): JSX.Element {
 
   const handleSync = (): void => {
     if (!thisDeck.bpm || !masterDeck.bpm) return
+
+    // Master's current effective BPM
     const masterEffectiveBpm = masterDeck.bpm * masterDeck.playbackRate
+    // Required playbackRate to match
     const newRate = masterEffectiveBpm / thisDeck.bpm
+
     getDeckEngine(deckId).playbackRate = newRate
     setPlaybackRate(deckId, newRate)
   }
@@ -27,12 +32,12 @@ export default function SyncButton({ deckId }: SyncButtonProps): JSX.Element {
       onClick={handleSync}
       disabled={!canSync}
       title={canSync ? `Sync to Deck ${masterId} BPM` : 'Load tracks on both decks first'}
-      className="px-3 py-1 rounded text-xs font-mono font-bold transition-colors disabled:opacity-30"
-      style={{
-        background: 'rgba(251,191,36,0.08)',
-        border: '1px solid rgba(251,191,36,0.25)',
-        color: '#fbbf24',
-      }}
+      className={[
+        'px-3 py-1 rounded text-xs font-mono font-bold transition-colors disabled:opacity-30',
+        isA
+          ? 'bg-blue-900 hover:bg-blue-800 text-blue-300 border border-blue-700'
+          : 'bg-orange-900 hover:bg-orange-800 text-orange-300 border border-orange-700'
+      ].join(' ')}
     >
       SYNC
     </button>

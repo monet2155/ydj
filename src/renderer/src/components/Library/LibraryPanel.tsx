@@ -223,20 +223,20 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
                       ].join(' ')}>
                         <button
                           onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'A') }}
-                          className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black font-bold"
+                          className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
                         >A</button>
                         <button
                           onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'B') }}
-                          className="px-2 py-0.5 rounded bg-amber-700 hover:bg-amber-600 text-white font-bold"
+                          className="px-2 py-0.5 rounded bg-orange-600 hover:bg-orange-500 text-white font-bold"
                         >B</button>
                         <button
                           onClick={(e) => { e.stopPropagation(); enqueue('A', track) }}
-                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-amber-900 text-amber-400 font-bold text-[10px]"
+                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-blue-800 text-blue-300 font-bold text-[10px]"
                           title="Deck A 다음 곡으로 예약"
                         >+A</button>
                         <button
                           onClick={(e) => { e.stopPropagation(); enqueue('B', track) }}
-                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-amber-900 text-amber-500 font-bold text-[10px]"
+                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-orange-800 text-orange-300 font-bold text-[10px]"
                           title="Deck B 다음 곡으로 예약"
                         >+B</button>
                       </div>

@@ -17,7 +17,7 @@ export default function WaveformRow(): JSX.Element {
           audioBuffer={buffers['A'] ?? null}
           position={deckA.position}
           duration={deckA.track?.duration ?? 0}
-          color="#fbbf24"
+          color="#3b82f6"
           hotCues={deckA.hotCues}
           loop={deckA.loop}
           onSeek={(sec) => { getDeckEngine('A').seek(sec); setPosition('A', sec) }}
@@ -29,7 +29,7 @@ export default function WaveformRow(): JSX.Element {
           audioBuffer={buffers['B'] ?? null}
           position={deckB.position}
           duration={deckB.track?.duration ?? 0}
-          color="#d97706"
+          color="#f97316"
           hotCues={deckB.hotCues}
           loop={deckB.loop}
           onSeek={(sec) => { getDeckEngine('B').seek(sec); setPosition('B', sec) }}

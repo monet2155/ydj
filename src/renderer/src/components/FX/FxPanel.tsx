@@ -24,8 +24,8 @@ const PARAM_LABEL: Record<string, string> = {
 
 export default function FxPanel({ deckId }: FxPanelProps): JSX.Element {
   const isA = deckId === 'A'
-  const accent = isA ? 'text-amber-400' : 'text-amber-500'
-  const accentBg = isA ? 'bg-amber-500 hover:bg-amber-400' : 'bg-amber-600 hover:bg-amber-500'
+  const accent = isA ? 'text-blue-400' : 'text-orange-400'
+  const accentBg = isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
   const [open, setOpen] = useState(false)
 
   const { fx, setFilter, setDelay, setReverb, setFlanger } = useFxStore()
