@@ -86,6 +86,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
   return (
     <div
       className={`flex flex-col flex-1 p-3 gap-2 overflow-y-auto ${isA ? 'bg-[#0f1520]' : 'bg-[#15100f]'}`}
+      style={{ paddingBottom: 'var(--lib-height)' }}
       data-testid={`deck-${deckId}`}
     >
       {/* Deck label + BPM */}
