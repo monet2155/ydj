@@ -82,7 +82,7 @@ export default function App(): JSX.Element {
   }, [])
 
   return (
-    <div className="flex flex-col h-screen bg-[#0f1117] text-slate-200 overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#0f1117] text-slate-200 overflow-hidden relative">
       {/* Header */}
       <header className="flex items-center justify-center h-7 bg-[#0a0d14] border-b border-slate-800 shrink-0">
         <span className="text-xs font-bold tracking-widest text-slate-500">YDJ</span>
@@ -100,10 +100,10 @@ export default function App(): JSX.Element {
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
-      {/* Library — collapsible + resizable */}
+      {/* Library — absolute overlay anchored to bottom, collapsible + resizable */}
       <div
-        className="shrink-0 bg-[#0a0d14] flex flex-col overflow-hidden"
-        style={{ height: libOpen ? libHeight : 28 }}
+        className="absolute left-0 right-0 bottom-0 bg-[#0a0d14] flex flex-col overflow-hidden"
+        style={{ height: libOpen ? libHeight : 28, zIndex: 10 }}
       >
         {/* Drag handle + header bar */}
         <div
