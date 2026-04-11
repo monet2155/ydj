@@ -97,8 +97,8 @@ export default function MixerPanel(): JSX.Element {
 
   return (
     <div
-      className="flex flex-col items-center shrink-0 bg-[#0a0d14] border-x border-slate-800 p-2 gap-3 overflow-y-auto"
-      style={{ width: 220, paddingBottom: 'var(--lib-height)' }}
+      className="flex flex-col items-center shrink-0 bg-[#0a0d14] border-x border-slate-800 p-2 gap-3"
+      style={{ width: 220 }}
       data-testid="mixer-panel"
     >
       <div className="text-xs font-bold tracking-widest text-slate-600">MIXER</div>
