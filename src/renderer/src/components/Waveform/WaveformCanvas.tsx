@@ -81,7 +81,11 @@ export default function WaveformCanvas({
     const mid = height / 2
 
     ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = '#0f172a'
+    // Deep background with subtle gradient
+    const bg = ctx.createLinearGradient(0, 0, 0, height)
+    bg.addColorStop(0, '#07090f')
+    bg.addColorStop(1, '#0a0c14')
+    ctx.fillStyle = bg
     ctx.fillRect(0, 0, width, height)
 
     const peaks = peaksRef.current
@@ -109,10 +113,19 @@ export default function WaveformCanvas({
       const peak = idx >= 0 && idx < peaks.length ? peaks[idx] : 0
       const barH = peak * mid * 0.9
 
-      // Left of playhead = played (colored), right = unplayed (dim)
-      ctx.fillStyle = t < position ? color : '#334155'
+      if (t < position) {
+        // Played — brighter color with subtle opacity falloff from playhead
+        const proximity = Math.max(0, 1 - (position - t) / 4)
+        ctx.globalAlpha = 0.55 + proximity * 0.45
+        ctx.fillStyle = color
+      } else {
+        // Unplayed — muted, slightly blue-tinted grey
+        ctx.globalAlpha = 0.25 + (peak * 0.2)
+        ctx.fillStyle = '#3d4f6a'
+      }
       ctx.fillRect(x, mid - barH, 1, barH * 2)
     }
+    ctx.globalAlpha = 1
 
     // Loop region overlay
     if (loop && loop.start !== null && loop.end !== null) {
@@ -146,9 +159,16 @@ export default function WaveformCanvas({
       })
     }
 
-    // Center line (playhead always in the middle)
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(Math.floor(width / 2), 0, 1, height)
+    // Playhead — deck-colored with glow
+    const px = Math.floor(width / 2)
+    ctx.shadowColor = color
+    ctx.shadowBlur = 10
+    ctx.fillStyle = color
+    ctx.fillRect(px - 1, 0, 2, height)
+    // Bright center line
+    ctx.shadowBlur = 0
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'
+    ctx.fillRect(px, 0, 1, height)
   }, [position, color, hotCues, loop])
 
   useEffect(() => { draw() }, [draw])

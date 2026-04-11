@@ -111,15 +111,25 @@ export default function App(): JSX.Element {
       style={{ '--lib-height': `${libHeight}px` } as React.CSSProperties}
     >
       {/* Header */}
-      <header className="flex items-center justify-center h-7 bg-[#0a0d14] border-b border-slate-800 shrink-0">
-        <span className="text-xs font-bold tracking-widest text-slate-500">YDJ</span>
+      <header className="flex items-center justify-center h-8 shrink-0 relative border-b border-white/5"
+        style={{ background: 'linear-gradient(180deg, #0d1018 0%, #0a0c12 100%)' }}>
+        <span
+          className="text-xs font-black tracking-[0.3em]"
+          style={{
+            background: 'linear-gradient(90deg, #3b82f6, #a78bfa, #f97316)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          YDJ
+        </span>
       </header>
 
       {/* Waveforms — full width, side by side */}
       <WaveformRow />
 
       {/* Middle: flex-1 so it fills whatever space the library doesn't take */}
-      <div className="flex flex-1 min-h-0 border-b border-slate-800">
+      <div className="flex flex-1 min-h-0 border-b border-white/5">
         <DeckPanel ref={deckARef} deckId="A" />
         <DeckDisk deckId="A" />
         <MixerPanel />
@@ -129,34 +139,35 @@ export default function App(): JSX.Element {
 
       {/* Library — absolute overlay anchored to bottom, drag to open/close/resize */}
       <div
-        className="absolute left-0 right-0 bottom-0 bg-[#0a0d14] flex flex-col overflow-hidden"
+        className="absolute left-0 right-0 bottom-0 flex flex-col overflow-hidden"
         style={{
           height: libHeight,
           zIndex: 10,
           transition: isDragging ? 'none' : 'height 0.18s ease-out',
+          background: 'linear-gradient(180deg, #0b0d15 0%, #080a10 100%)',
         }}
       >
         {/* Drag handle */}
         <div
-          className="h-7 shrink-0 flex items-center px-3 gap-2 border-t border-slate-800 select-none cursor-ns-resize group"
+          className="h-7 shrink-0 flex items-center px-3 gap-2 select-none cursor-ns-resize group"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
           onMouseDown={onDragStart}
         >
-          <div className="flex flex-col gap-0.5 opacity-30 group-hover:opacity-70 transition-opacity">
-            {[0, 1].map((r) => (
-              <div key={r} className="flex gap-0.5">
-                {[0, 1, 2].map((c) => <div key={c} className="w-0.5 h-0.5 rounded-full bg-slate-400" />)}
-              </div>
-            ))}
+          {/* Drag indicator */}
+          <div className="w-8 flex flex-col gap-[3px] opacity-20 group-hover:opacity-50 transition-opacity">
+            <div className="h-px bg-slate-400 rounded" />
+            <div className="h-px bg-slate-400 rounded" />
+            <div className="h-px bg-slate-400 rounded" />
           </div>
-          <span className="text-[10px] font-bold tracking-widest text-slate-600 flex-1 pointer-events-none">
+          <span className="text-[9px] font-black tracking-[0.25em] text-slate-600 flex-1 pointer-events-none">
             LIBRARY
           </span>
           <button
             onMouseDown={(e) => e.stopPropagation()}
             onClick={toggleLib}
-            className="text-slate-600 hover:text-slate-300 text-xs px-1"
+            className="text-[10px] text-slate-600 hover:text-slate-300 px-1 transition-colors"
           >
-            {isLibOpen ? '▼' : '▲'}
+            {isLibOpen ? '▾' : '▴'}
           </button>
         </div>
 

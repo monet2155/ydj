@@ -101,18 +101,18 @@ export default function MixerPanel(): JSX.Element {
 
   return (
     <div
-      className="flex flex-col items-center shrink-0 bg-[#0a0d14] border-x border-slate-800 p-2 pb-10 gap-3"
-      style={{ width: 220 }}
+      className="flex flex-col items-center shrink-0 p-2 pb-10 gap-3 border-x"
+      style={{ width: 220, background: 'linear-gradient(180deg, #0b0d14 0%, #080a10 100%)', borderColor: 'rgba(255,255,255,0.06)' }}
       data-testid="mixer-panel"
     >
-      <div className="text-xs font-bold tracking-widest text-slate-600">MIXER</div>
+      <div className="text-[10px] font-black tracking-[0.25em] text-slate-500">MIXER</div>
 
       {/* EQ channels */}
       <div className="flex gap-1 w-full justify-center">
         <EqChannel deckId="A" />
 
         {/* Master volume */}
-        <div className="flex flex-col items-center gap-2 px-2 border-x border-slate-800">
+        <div className="flex flex-col items-center gap-2 px-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
           <span className="text-xs text-slate-600">VOL</span>
           <input
             type="range" min={0} max={1} step={0.01}
@@ -130,29 +130,40 @@ export default function MixerPanel(): JSX.Element {
       <div className="flex-1" />
 
       {/* Crossfader */}
-      <div className="flex flex-col items-center gap-1 w-full">
-        <div className="flex justify-between w-full text-xs px-1">
-          <span className="text-blue-400 font-bold">A</span>
-          <span className="text-slate-600 text-[10px] tracking-widest">XFADER</span>
-          <span className="text-orange-400 font-bold">B</span>
+      <div className="flex flex-col items-center gap-1.5 w-full">
+        <div className="flex justify-between w-full px-1 items-center">
+          <span className="text-[11px] font-black text-blue-400" style={{ textShadow: '0 0 8px #3b82f680' }}>A</span>
+          <span className="text-[9px] font-bold tracking-[0.2em] text-slate-600">XFADER</span>
+          <span className="text-[11px] font-black text-orange-400" style={{ textShadow: '0 0 8px #f9731680' }}>B</span>
         </div>
-        <input
-          type="range" min={0} max={1} step={0.001}
-          value={crossfader}
-          onChange={(e) => { if (!autoFading) setCrossfader(parseFloat(e.target.value)) }}
-          className="w-full accent-slate-400"
-        />
+        {/* Gradient track wrapper */}
+        <div className="relative w-full flex items-center">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded pointer-events-none"
+            style={{ background: 'linear-gradient(90deg, #3b82f660 0%, #1e293b 40%, #1e293b 60%, #f9731660 100%)' }} />
+          <input
+            type="range" min={0} max={1} step={0.001}
+            value={crossfader}
+            onChange={(e) => { if (!autoFading) setCrossfader(parseFloat(e.target.value)) }}
+            className="relative w-full"
+            style={{ background: 'transparent' }}
+          />
+        </div>
 
         {/* Auto-crossfade */}
-        <div className="flex gap-1 w-full mt-1">
+        <div className="flex gap-1 w-full">
           <button
             onClick={handleAuto}
-            className={[
-              'flex-1 py-1 rounded text-[10px] font-bold font-mono tracking-widest',
-              autoFading
-                ? 'bg-green-600 hover:bg-green-500 text-white'
-                : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-            ].join(' ')}
+            className="flex-1 py-1.5 rounded text-[10px] font-bold font-mono tracking-widest transition-all duration-150"
+            style={autoFading ? {
+              background: 'linear-gradient(90deg, #3b82f630, #10b98130, #f9731630)',
+              border: '1px solid rgba(16,185,129,0.4)',
+              color: '#6ee7b7',
+              boxShadow: '0 0 10px rgba(16,185,129,0.2)',
+            } : {
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              color: '#94a3b8',
+            }}
           >
             {autoFading ? `■ ${autoRemaining.toFixed(1)}s` : '▶ AUTO'}
           </button>
@@ -162,7 +173,8 @@ export default function MixerPanel(): JSX.Element {
               setAutoDuration(AUTO_DURATIONS[(idx + 1) % AUTO_DURATIONS.length])
             }}
             disabled={autoFading}
-            className="w-10 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-400 disabled:opacity-40"
+            className="w-10 py-1.5 rounded text-[10px] font-mono text-slate-400 disabled:opacity-40 transition-colors"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
           >
             {autoDuration}s
           </button>

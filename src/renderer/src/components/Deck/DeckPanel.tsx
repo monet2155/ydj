@@ -85,8 +85,13 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
 
   return (
     <div
-      className={`flex flex-col flex-1 p-3 gap-2 overflow-y-auto ${isA ? 'bg-[#0f1520]' : 'bg-[#15100f]'}`}
-      style={{ paddingBottom: 'var(--lib-height)' }}
+      className={`flex flex-col flex-1 p-3 gap-2 overflow-y-auto ${isA ? 'deck-border-a' : 'deck-border-b'}`}
+      style={{
+        paddingBottom: 'var(--lib-height)',
+        background: isA
+          ? 'linear-gradient(160deg, #080e1c 0%, #0a0c12 60%)'
+          : 'linear-gradient(160deg, #150b06 0%, #0a0c12 60%)',
+      }}
       data-testid={`deck-${deckId}`}
     >
       {/* Deck label */}
@@ -97,7 +102,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       </div>
 
       {/* Track title */}
-      <div className="rounded bg-slate-900 border border-slate-800 px-2 py-1 min-h-[28px] flex items-center">
+      <div className="rounded px-2 py-1 min-h-[28px] flex items-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
         {deck.error ? (
           <span className="text-red-400 text-xs truncate">{deck.error}</span>
         ) : deck.track ? (
@@ -145,11 +150,14 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
           onClick={handlePlayPause}
           disabled={!deck.track}
           className={[
-            'flex-1 py-2.5 rounded text-base font-mono font-bold disabled:opacity-40 transition-colors',
+            'flex-1 py-2.5 rounded text-base font-mono font-bold disabled:opacity-40 transition-all duration-150',
             deck.isPlaying
               ? isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
-              : 'bg-slate-700 hover:bg-slate-600'
+              : 'bg-white/10 hover:bg-white/15'
           ].join(' ')}
+          style={deck.isPlaying ? {
+            boxShadow: isA ? '0 0 16px #3b82f660, 0 0 32px #3b82f630' : '0 0 16px #f9731660, 0 0 32px #f9731630'
+          } : undefined}
         >
           {deck.isPlaying ? '⏸' : '▶'}
         </button>
