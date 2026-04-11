@@ -42,13 +42,13 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
               defaultValue={0}
               label={band.toUpperCase()}
               color={kill ? '#ef4444' : color}
-              size={32}
+              size={38}
               onChange={(db) => { if (!kill) handleEq(band, db) }}
             />
             <button
               onClick={() => handleKill(band)}
               className={[
-                'text-[9px] font-bold px-1.5 py-0.5 rounded tracking-widest',
+                'text-[10px] font-bold px-2 py-1 rounded tracking-widest transition-colors',
                 kill ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'
               ].join(' ')}
             >
@@ -65,6 +65,7 @@ export default function MixerPanel(): JSX.Element {
   const { crossfader, masterVolume, setCrossfader, setMasterVolume } = useMixerStore()
   const [autoDuration, setAutoDuration] = useState<AutoDuration>(8)
   const [autoFading, setAutoFading] = useState(false)
+  const [autoRemaining, setAutoRemaining] = useState(0)
   const autoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => { getMixerEngine().setCrossfader(crossfader) }, [crossfader])
@@ -82,13 +83,16 @@ export default function MixerPanel(): JSX.Element {
     const durationMs = autoDuration * 1000
     setAutoFading(true)
     autoTimerRef.current = setInterval(() => {
-      const t = Math.min((Date.now() - startTime) / durationMs, 1)
+      const elapsed = Date.now() - startTime
+      const t = Math.min(elapsed / durationMs, 1)
       const next = startVal + (target - startVal) * t
       setCrossfader(next)
+      setAutoRemaining(Math.max(0, (durationMs - elapsed) / 1000))
       if (t >= 1) {
         clearInterval(autoTimerRef.current!)
         autoTimerRef.current = null
         setAutoFading(false)
+        setAutoRemaining(0)
       }
     }, 40)
   }
@@ -150,7 +154,7 @@ export default function MixerPanel(): JSX.Element {
                 : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
             ].join(' ')}
           >
-            {autoFading ? '■ STOP' : '▶ AUTO'}
+            {autoFading ? `■ ${autoRemaining.toFixed(1)}s` : '▶ AUTO'}
           </button>
           <button
             onClick={() => {

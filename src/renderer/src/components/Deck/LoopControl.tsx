@@ -49,8 +49,9 @@ export default function LoopControl({ deckId }: LoopControlProps): JSX.Element {
             key={beats}
             onClick={() => activateAutoLoop(beats)}
             disabled={!deck.track || deck.bpm === null}
+            title={deck.bpm === null ? 'BPM이 감지된 후 사용 가능' : `${formatBeats(beats)} 비트 루프`}
             className={[
-              'flex-1 py-1 rounded text-[9px] font-bold font-mono disabled:opacity-30',
+              'flex-1 py-1.5 rounded text-xs font-bold font-mono disabled:opacity-30 transition-colors',
               deck.loop.active ? color : 'bg-slate-800 hover:bg-slate-700 text-slate-400'
             ].join(' ')}
           >
@@ -64,7 +65,7 @@ export default function LoopControl({ deckId }: LoopControlProps): JSX.Element {
         <button
           onClick={toggleLoop}
           className={[
-            'w-full py-1 rounded text-[10px] font-bold font-mono',
+            'w-full py-1.5 rounded text-xs font-bold font-mono transition-colors',
             deck.loop.active ? activeColor + ' text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'
           ].join(' ')}
         >

@@ -85,7 +85,19 @@ export default function WaveformCanvas({
     ctx.fillRect(0, 0, width, height)
 
     const peaks = peaksRef.current
-    if (!peaks) return
+    if (!peaks) {
+      // Empty state placeholder
+      ctx.fillStyle = '#1e293b40'
+      ctx.fillRect(0, 0, width, height)
+      ctx.fillStyle = '#334155'
+      ctx.font = '11px system-ui, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('트랙을 불러오세요', width / 2, height / 2)
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'alphabetic'
+      return
+    }
 
     const halfW = VISIBLE_SECONDS       // seconds shown on each side
     const totalVisible = halfW * 2      // total seconds in view
@@ -119,18 +131,18 @@ export default function WaveformCanvas({
 
     // Hot cue markers
     if (hotCues) {
-      ctx.font = 'bold 7px monospace'
+      ctx.font = 'bold 9px monospace'
       hotCues.forEach((sec, i) => {
         if (sec === null) return
         const x = ((sec - startTime) / totalVisible) * width
-        if (x < -10 || x > width + 10) return
+        if (x < -14 || x > width + 14) return
         const c = CUE_COLORS[i]
         ctx.fillStyle = c
         ctx.fillRect(x, 0, 2, height)
-        // Small triangle label at top
-        ctx.fillRect(x, 0, 10, 9)
+        // Label badge at top
+        ctx.fillRect(x, 0, 14, 12)
         ctx.fillStyle = '#fff'
-        ctx.fillText(String(i + 1), x + 1.5, 8)
+        ctx.fillText(String(i + 1), x + 2, 10)
       })
     }
 

@@ -89,16 +89,11 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       style={{ paddingBottom: 'var(--lib-height)' }}
       data-testid={`deck-${deckId}`}
     >
-      {/* Deck label + BPM */}
-      <div className="flex items-center justify-between">
+      {/* Deck label */}
+      <div className="flex items-center">
         <span className={`text-base font-black tracking-widest ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
           DECK {deckId}
         </span>
-        {deck.bpm && (
-          <span className={`text-xl font-black font-mono ${isA ? 'text-blue-300' : 'text-orange-300'}`}>
-            {deck.bpm.toFixed(1)}
-          </span>
-        )}
       </div>
 
       {/* Track title */}
@@ -121,18 +116,28 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
 
       {/* Time display */}
       <div className="flex justify-between text-xs font-mono px-1">
-        <span className="text-slate-300">{formatTime(deck.position)}</span>
-        <span className="text-slate-600">{deck.track ? formatTime(deck.track.duration) : '0:00'}</span>
-        <span className={isA ? 'text-blue-400' : 'text-orange-400'}>
-          -{formatTime(Math.max(0, remaining))}
-        </span>
+        <div className="flex flex-col items-start">
+          <span className="text-[9px] text-slate-600 leading-none mb-0.5">elapsed</span>
+          <span className="text-slate-300">{formatTime(deck.position)}</span>
+        </div>
+        <div className="flex flex-col items-center">
+          <span className="text-[9px] text-slate-600 leading-none mb-0.5">total</span>
+          <span className="text-slate-600">{deck.track ? formatTime(deck.track.duration) : '0:00'}</span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="text-[9px] text-slate-600 leading-none mb-0.5">remain</span>
+          <span className={isA ? 'text-blue-400' : 'text-orange-400'}>
+            -{formatTime(Math.max(0, remaining))}
+          </span>
+        </div>
       </div>
 
       {/* Transport */}
-      <div className="flex gap-2 items-center justify-center">
+      <div className="flex gap-2 items-stretch">
         <button
           onClick={handleCue}
-          className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold"
+          title="재생 위치를 처음으로 되돌림 (CUE)"
+          className="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors shrink-0"
         >
           CUE
         </button>
@@ -140,7 +145,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
           onClick={handlePlayPause}
           disabled={!deck.track}
           className={[
-            'px-5 py-1.5 rounded text-xs font-mono font-bold disabled:opacity-40',
+            'flex-1 py-2.5 rounded text-base font-mono font-bold disabled:opacity-40 transition-colors',
             deck.isPlaying
               ? isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
               : 'bg-slate-700 hover:bg-slate-600'

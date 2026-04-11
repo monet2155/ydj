@@ -61,17 +61,23 @@ export default function HotCueBar({ deckId }: HotCueBarProps): JSX.Element {
             onClick={() => isSet ? handleJump(i) : handleSet(i)}
             onContextMenu={(e) => handleDelete(e, i)}
             disabled={!deck.track}
-            className="flex flex-col items-center justify-center rounded py-1 text-[9px] font-bold disabled:opacity-30 transition-colors"
+            className="flex flex-col items-center justify-center rounded py-1 text-xs font-bold disabled:opacity-30 transition-colors"
             style={{
               backgroundColor: isSet ? `${color}33` : '#1e293b',
-              border: `1px solid ${isSet ? color : '#334155'}`,
+              border: `1px solid ${isSet ? color : '#2d3748'}`,
               color: isSet ? color : '#475569',
-              minHeight: 32
+              minHeight: 34
             }}
-            title={isSet ? `HOT CUE ${i + 1}: ${formatTime(pos)} (우클릭: 삭제)` : `HOT CUE ${i + 1} 설정`}
+            title={isSet ? `HOT CUE ${i + 1}: ${formatTime(pos)} (우클릭: 삭제)` : `HOT CUE ${i + 1} — 클릭해서 현재 위치 저장`}
           >
-            <span>{i + 1}</span>
-            {isSet && <span style={{ fontSize: 8, opacity: 0.8 }}>{formatTime(pos)}</span>}
+            {isSet ? (
+              <>
+                <span>{i + 1}</span>
+                <span style={{ fontSize: 10, opacity: 0.8 }}>{formatTime(pos)}</span>
+              </>
+            ) : (
+              <span className="text-slate-600 text-sm leading-none">+</span>
+            )}
           </button>
         )
       })}

@@ -10,7 +10,7 @@ export default function WaveformRow(): JSX.Element {
   const { setPosition } = useDeckStore()
 
   return (
-    <div className="flex shrink-0 border-b border-slate-800" style={{ height: 72 }}>
+    <div className="flex shrink-0 border-b border-slate-800" style={{ height: 110 }}>
       {/* Deck A waveform */}
       <div className="flex-1 border-r border-slate-800 bg-slate-950 overflow-hidden">
         <WaveformCanvas

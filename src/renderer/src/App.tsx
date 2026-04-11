@@ -12,11 +12,12 @@ import { getDeckEngine } from './hooks/useAudio'
 
 function DeckDisk({ deckId }: { deckId: DeckId }): JSX.Element {
   const isPlaying = useDeckStore((s) => s.decks[deckId].isPlaying)
+  const hasTrack = useDeckStore((s) => s.decks[deckId].track !== null)
   const color = deckId === 'A' ? '#3b82f6' : '#f97316'
   const scratch = useDeckScratch(deckId)
   return (
     <div className="flex items-center justify-center w-44 shrink-0 bg-[#0a0d14] border-x border-slate-800 py-3">
-      <VinylDisk isPlaying={isPlaying} color={color} label={deckId} {...scratch} />
+      <VinylDisk isPlaying={isPlaying} color={color} label={deckId} hasTrack={hasTrack} {...scratch} />
     </div>
   )
 }
@@ -45,6 +46,7 @@ export default function App(): JSX.Element {
   const DEFAULT_OPEN_H = 220
 
   const [libHeight, setLibHeight] = useState(CLOSED_H)
+  const [isDragging, setIsDragging] = useState(false)
   const lastOpenH = useRef(DEFAULT_OPEN_H)
   const dragState = useRef<{ startY: number; startH: number } | null>(null)
 
@@ -59,6 +61,7 @@ export default function App(): JSX.Element {
 
   const onDragEnd = useCallback(() => {
     dragState.current = null
+    setIsDragging(false)
     document.removeEventListener('mousemove', onDragMove)
     document.removeEventListener('mouseup', onDragEnd)
     // Snap: below threshold → close, above → keep & remember height
@@ -71,6 +74,7 @@ export default function App(): JSX.Element {
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
+    setIsDragging(true)
     dragState.current = { startY: e.clientY, startH: libHeight }
     document.addEventListener('mousemove', onDragMove)
     document.addEventListener('mouseup', onDragEnd)
@@ -126,7 +130,11 @@ export default function App(): JSX.Element {
       {/* Library — absolute overlay anchored to bottom, drag to open/close/resize */}
       <div
         className="absolute left-0 right-0 bottom-0 bg-[#0a0d14] flex flex-col overflow-hidden"
-        style={{ height: libHeight, zIndex: 10 }}
+        style={{
+          height: libHeight,
+          zIndex: 10,
+          transition: isDragging ? 'none' : 'height 0.18s ease-out',
+        }}
       >
         {/* Drag handle */}
         <div

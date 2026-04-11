@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface VinylDiskProps {
   isPlaying: boolean
   color: string    // '#3b82f6' | '#f97316'
   label: string    // 'A' | 'B'
+  hasTrack?: boolean
   onScratchStart: () => void
   onScratch: (deltaSeconds: number) => void
   onScratchEnd: () => void
@@ -16,6 +17,7 @@ export default function VinylDisk({
   isPlaying,
   color,
   label,
+  hasTrack = false,
   onScratchStart,
   onScratch,
   onScratchEnd,
@@ -23,6 +25,7 @@ export default function VinylDisk({
   const diskRef = useRef<HTMLDivElement>(null)
   const angleRef = useRef(0)
   const isDraggingRef = useRef(false)
+  const [isDragging, setIsDragging] = useState(false)
   const lastMouseAngleRef = useRef(0)
   const rafRef = useRef(0)
   const isPlayingRef = useRef(isPlaying)
@@ -82,6 +85,7 @@ export default function VinylDisk({
     const onUp = (): void => {
       if (!isDraggingRef.current) return
       isDraggingRef.current = false
+      setIsDragging(false)
       onScratchEnd()
     }
 
@@ -96,6 +100,7 @@ export default function VinylDisk({
   const handleMouseDown = (e: React.MouseEvent): void => {
     e.preventDefault()
     isDraggingRef.current = true
+    setIsDragging(true)
     lastMouseAngleRef.current = getMouseAngle(e.nativeEvent)
     onScratchStart()
   }
@@ -108,7 +113,10 @@ export default function VinylDisk({
         className="absolute inset-0 rounded-full cursor-grab active:cursor-grabbing"
         style={{
           background: 'radial-gradient(circle, #1e2433 60%, #0f1117 100%)',
-          boxShadow: '0 0 0 2px #1e293b, 0 4px 24px rgba(0,0,0,0.6)',
+          boxShadow: isDragging
+            ? `0 0 0 2px ${color}88, 0 0 20px ${color}44, 0 4px 24px rgba(0,0,0,0.6)`
+            : '0 0 0 2px #1e293b, 0 4px 24px rgba(0,0,0,0.6)',
+          transition: 'box-shadow 0.15s ease',
         }}
         onMouseDown={handleMouseDown}
       >
@@ -123,15 +131,20 @@ export default function VinylDisk({
 
         {/* Center label */}
         <div
-          className="absolute rounded-full flex items-center justify-center"
-          style={{ inset: '35%', backgroundColor: color, opacity: 0.9 }}
+          className="absolute rounded-full flex flex-col items-center justify-center"
+          style={{ inset: '35%', backgroundColor: color, opacity: hasTrack ? 0.9 : 0.4 }}
         >
           <span
-            className="text-white font-black text-lg tracking-widest"
+            className="text-white font-black text-lg tracking-widest leading-none"
             style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}
           >
             {label}
           </span>
+          {!hasTrack && (
+            <span className="text-white text-[7px] font-bold opacity-70 tracking-wider leading-none mt-0.5">
+              LOAD
+            </span>
+          )}
         </div>
 
         {/* Spindle */}

@@ -120,11 +120,12 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
         </div>
 
         {isDownloading && (
-          <div className="h-0.5 bg-slate-800 rounded overflow-hidden">
-            <div className="h-full bg-green-500 transition-all" style={{ width: `${progress}%` }} />
+          <div className="h-1.5 bg-slate-800 rounded overflow-hidden">
+            <div className="h-full bg-blue-500 transition-all rounded" style={{ width: `${progress}%` }} />
           </div>
         )}
         {error && <p className="text-red-400 text-xs truncate">{error}</p>}
+
       </div>
 
       {/* Search results */}
@@ -183,8 +184,10 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
       {/* Track list */}
       <div className="flex-1 overflow-y-auto">
         {tracks.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-700 text-xs">
-            URL 또는 검색어를 입력해서 트랙을 추가하세요
+          <div className="flex flex-col items-center justify-center h-full gap-2 px-4 text-center">
+            <span className="text-2xl opacity-20">♪</span>
+            <span className="text-slate-400 text-xs font-medium">라이브러리가 비어 있어요</span>
+            <span className="text-slate-600 text-[11px]">위 검색창에 노래 이름이나 YouTube URL을 입력해보세요</span>
           </div>
         ) : (
           <table className="w-full text-xs">
@@ -192,7 +195,7 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
               <tr>
                 <th className="text-left px-3 py-1 font-normal">제목</th>
                 <th className="text-right px-3 py-1 font-normal w-14">길이</th>
-                <th className="w-32 px-3 py-1" />
+                <th className="w-36 px-3 py-1" />
               </tr>
             </thead>
             <tbody>
@@ -203,39 +206,40 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
                     key={track.videoId}
                     onClick={() => setSelectedId(isSelected ? null : track.videoId)}
                     className={[
-                      'cursor-pointer border-b border-slate-800/50',
+                      'group cursor-pointer border-b border-slate-800/50',
                       isSelected ? 'bg-slate-800' : 'hover:bg-slate-900'
                     ].join(' ')}
                   >
                     <td className="px-3 py-1.5 max-w-0 w-full">
-                      <span className="truncate block">{track.title}</span>
+                      <span className="truncate block" title={track.title}>{track.title}</span>
                     </td>
                     <td className="px-3 py-1.5 text-right text-slate-500 font-mono tabular-nums whitespace-nowrap">
                       {formatTime(track.duration)}
                     </td>
                     <td className="px-3 py-1.5 whitespace-nowrap">
-                      {isSelected && (
-                        <div className="flex gap-1 justify-end">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'A') }}
-                            className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
-                          >A</button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'B') }}
-                            className="px-2 py-0.5 rounded bg-orange-600 hover:bg-orange-500 text-white font-bold"
-                          >B</button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); enqueue('A', track) }}
-                            className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-blue-800 text-blue-300 font-bold text-[10px]"
-                            title="Deck A 큐에 추가"
-                          >+A</button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); enqueue('B', track) }}
-                            className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-orange-800 text-orange-300 font-bold text-[10px]"
-                            title="Deck B 큐에 추가"
-                          >+B</button>
-                        </div>
-                      )}
+                      <div className={[
+                        'flex gap-1 justify-end transition-opacity',
+                        isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      ].join(' ')}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'A') }}
+                          className="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold"
+                        >A</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onLoad(track.filePath, track, 'B') }}
+                          className="px-2 py-0.5 rounded bg-orange-600 hover:bg-orange-500 text-white font-bold"
+                        >B</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); enqueue('A', track) }}
+                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-blue-800 text-blue-300 font-bold text-[10px]"
+                          title="Deck A 다음 곡으로 예약"
+                        >+A</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); enqueue('B', track) }}
+                          className="px-1.5 py-0.5 rounded bg-slate-700 hover:bg-orange-800 text-orange-300 font-bold text-[10px]"
+                          title="Deck B 다음 곡으로 예약"
+                        >+B</button>
+                      </div>
                     </td>
                   </tr>
                 )
