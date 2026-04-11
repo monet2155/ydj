@@ -100,6 +100,9 @@ export default function App(): JSX.Element {
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
+      {/* Spacer — pushes library to bottom */}
+      <div className="flex-1" />
+
       {/* Library — collapsible + resizable */}
       <div
         className="shrink-0 bg-[#0a0d14] flex flex-col overflow-hidden"
