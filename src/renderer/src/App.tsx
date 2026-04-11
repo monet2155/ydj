@@ -91,17 +91,14 @@ export default function App(): JSX.Element {
       {/* Waveforms — full width, side by side */}
       <WaveformRow />
 
-      {/* Middle: Deck A | Vinyl A | Mixer | Vinyl B | Deck B */}
-      <div className="flex shrink-0 border-b border-slate-800" style={{ height: 300 }}>
+      {/* Middle: flex-1 so it fills whatever space the library doesn't take */}
+      <div className="flex flex-1 min-h-0 border-b border-slate-800">
         <DeckPanel ref={deckARef} deckId="A" />
         <DeckDisk deckId="A" />
         <MixerPanel />
         <DeckDisk deckId="B" />
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
-
-      {/* Spacer — pushes library to bottom */}
-      <div className="flex-1" />
 
       {/* Library — collapsible + resizable */}
       <div
