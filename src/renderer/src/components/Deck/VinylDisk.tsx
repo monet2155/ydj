@@ -106,20 +106,22 @@ export default function VinylDisk({
   }
 
   return (
-    <div className="relative w-full aspect-square max-w-[200px] mx-auto select-none">
+    <div
+      className="relative w-full aspect-square max-w-[200px] mx-auto select-none rounded-full"
+      style={{
+        boxShadow: isDragging
+          ? `0 0 0 2px ${color}99, 0 0 24px ${color}55, 0 0 48px ${color}22`
+          : isPlaying
+            ? `0 0 0 1px ${color}44, 0 0 16px ${color}30, 0 4px 20px rgba(0,0,0,0.7)`
+            : '0 0 0 1px rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.7)',
+        transition: 'box-shadow 0.3s ease',
+      }}
+    >
       {/* Record body — rotation applied via ref */}
       <div
         ref={diskRef}
         className="absolute inset-0 rounded-full cursor-grab active:cursor-grabbing"
-        style={{
-          background: 'radial-gradient(circle at 40% 40%, #1e2433 50%, #0a0c12 100%)',
-          boxShadow: isDragging
-            ? `0 0 0 2px ${color}99, 0 0 24px ${color}55, 0 0 48px ${color}22`
-            : isPlaying
-              ? `0 0 0 1px ${color}44, 0 0 16px ${color}30, 0 4px 20px rgba(0,0,0,0.7)`
-              : '0 0 0 1px rgba(255,255,255,0.06), 0 4px 20px rgba(0,0,0,0.7)',
-          transition: 'box-shadow 0.3s ease',
-        }}
+        style={{ background: 'radial-gradient(circle at 40% 40%, #1e2433 50%, #0a0c12 100%)' }}
         onMouseDown={handleMouseDown}
       >
         {/* Groove rings */}
