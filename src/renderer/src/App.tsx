@@ -40,20 +40,33 @@ export default function App(): JSX.Element {
   }
 
   // Library open/resize state
-  const [libOpen, setLibOpen] = useState(true)
-  const [libHeight, setLibHeight] = useState(200)
+  const CLOSED_H = 28
+  const SNAP_THRESHOLD = 80   // below this on release → snap closed
+  const DEFAULT_OPEN_H = 220
+
+  const [libHeight, setLibHeight] = useState(CLOSED_H)
+  const lastOpenH = useRef(DEFAULT_OPEN_H)
   const dragState = useRef<{ startY: number; startH: number } | null>(null)
+
+  const isLibOpen = libHeight > CLOSED_H
 
   const onDragMove = useCallback((e: MouseEvent) => {
     if (!dragState.current) return
     const delta = dragState.current.startY - e.clientY  // drag up → taller
-    setLibHeight(Math.max(80, Math.min(520, dragState.current.startH + delta)))
+    const next = Math.max(CLOSED_H, Math.min(520, dragState.current.startH + delta))
+    setLibHeight(next)
   }, [])
 
   const onDragEnd = useCallback(() => {
     dragState.current = null
     document.removeEventListener('mousemove', onDragMove)
     document.removeEventListener('mouseup', onDragEnd)
+    // Snap: below threshold → close, above → keep & remember height
+    setLibHeight((h) => {
+      if (h < SNAP_THRESHOLD) return CLOSED_H
+      lastOpenH.current = h
+      return h
+    })
   }, [onDragMove])
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -62,6 +75,13 @@ export default function App(): JSX.Element {
     document.addEventListener('mousemove', onDragMove)
     document.addEventListener('mouseup', onDragEnd)
   }, [libHeight, onDragMove, onDragEnd])
+
+  const toggleLib = (): void => {
+    setLibHeight((h) => {
+      if (h > CLOSED_H) { lastOpenH.current = h; return CLOSED_H }
+      return lastOpenH.current
+    })
+  }
 
   // Wire queue auto-load: when a deck finishes naturally, load next from queue
   useEffect(() => {
@@ -100,18 +120,17 @@ export default function App(): JSX.Element {
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
-      {/* Library — absolute overlay anchored to bottom, collapsible + resizable */}
+      {/* Library — absolute overlay anchored to bottom, drag to open/close/resize */}
       <div
         className="absolute left-0 right-0 bottom-0 bg-[#0a0d14] flex flex-col overflow-hidden"
-        style={{ height: libOpen ? libHeight : 28, zIndex: 10 }}
+        style={{ height: libHeight, zIndex: 10 }}
       >
-        {/* Drag handle + header bar */}
+        {/* Drag handle */}
         <div
           className="h-7 shrink-0 flex items-center px-3 gap-2 border-t border-slate-800 select-none cursor-ns-resize group"
           onMouseDown={onDragStart}
         >
-          {/* Grip dots */}
-          <div className="flex flex-col gap-0.5 opacity-30 group-hover:opacity-60">
+          <div className="flex flex-col gap-0.5 opacity-30 group-hover:opacity-70 transition-opacity">
             {[0, 1].map((r) => (
               <div key={r} className="flex gap-0.5">
                 {[0, 1, 2].map((c) => <div key={c} className="w-0.5 h-0.5 rounded-full bg-slate-400" />)}
@@ -123,19 +142,17 @@ export default function App(): JSX.Element {
           </span>
           <button
             onMouseDown={(e) => e.stopPropagation()}
-            onClick={() => setLibOpen((v) => !v)}
+            onClick={toggleLib}
             className="text-slate-600 hover:text-slate-300 text-xs px-1"
           >
-            {libOpen ? '▼' : '▲'}
+            {isLibOpen ? '▼' : '▲'}
           </button>
         </div>
 
-        {/* Panel content */}
-        {libOpen && (
-          <div className="flex-1 min-h-0">
-            <LibraryPanel onLoad={handleLibraryLoad} />
-          </div>
-        )}
+        {/* Panel content — rendered even when animating so it doesn't flash */}
+        <div className="flex-1 min-h-0" style={{ visibility: isLibOpen ? 'visible' : 'hidden' }}>
+          <LibraryPanel onLoad={handleLibraryLoad} />
+        </div>
       </div>
     </div>
   )
