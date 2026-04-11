@@ -13,7 +13,7 @@ import { getDeckEngine } from './hooks/useAudio'
 function DeckDisk({ deckId }: { deckId: DeckId }): JSX.Element {
   const isPlaying = useDeckStore((s) => s.decks[deckId].isPlaying)
   const hasTrack = useDeckStore((s) => s.decks[deckId].track !== null)
-  const color = deckId === 'A' ? '#3b82f6' : '#f97316'
+  const color = deckId === 'A' ? '#fbbf24' : '#d97706'
   const scratch = useDeckScratch(deckId)
   return (
     <div className="flex items-center justify-center w-44 shrink-0 bg-[#0a0d14] border-x border-slate-800 py-3">
@@ -107,16 +107,16 @@ export default function App(): JSX.Element {
 
   return (
     <div
-      className="flex flex-col h-screen bg-[#0f1117] text-slate-200 overflow-hidden relative"
-      style={{ '--lib-height': `${libHeight}px` } as React.CSSProperties}
+      className="flex flex-col h-screen text-stone-200 overflow-hidden relative"
+      style={{ '--lib-height': `${libHeight}px`, background: '#0d0c09' } as React.CSSProperties}
     >
       {/* Header */}
       <header className="flex items-center justify-center h-8 shrink-0 relative border-b border-white/5"
-        style={{ background: 'linear-gradient(180deg, #0d1018 0%, #0a0c12 100%)' }}>
+        style={{ background: 'linear-gradient(180deg, #100f0c 0%, #0d0c09 100%)' }}>
         <span
           className="text-xs font-black tracking-[0.3em]"
           style={{
-            background: 'linear-gradient(90deg, #3b82f6, #a78bfa, #f97316)',
+            background: 'linear-gradient(90deg, #fbbf24, #f59e0b, #d97706)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}
@@ -144,7 +144,7 @@ export default function App(): JSX.Element {
           height: libHeight,
           zIndex: 10,
           transition: isDragging ? 'none' : 'height 0.18s ease-out',
-          background: 'linear-gradient(180deg, #0b0d15 0%, #080a10 100%)',
+          background: 'linear-gradient(180deg, #100f0b 0%, #0c0b08 100%)',
         }}
       >
         {/* Drag handle */}

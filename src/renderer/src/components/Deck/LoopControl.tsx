@@ -11,8 +11,8 @@ export default function LoopControl({ deckId }: LoopControlProps): JSX.Element {
   const deck = useDeckStore((s) => s.decks[deckId])
   const { setLoop } = useDeckStore()
   const isA = deckId === 'A'
-  const color = isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
-  const activeColor = isA ? 'bg-blue-500 ring-2 ring-blue-300' : 'bg-orange-500 ring-2 ring-orange-300'
+  const color = isA ? 'bg-amber-500 hover:bg-amber-400' : 'bg-amber-600 hover:bg-amber-500'
+  const activeColor = isA ? 'bg-blue-500 ring-2 ring-amber-300' : 'bg-orange-500 ring-2 ring-amber-400'
 
   const bpm = deck.bpm
 

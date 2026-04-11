@@ -8,28 +8,26 @@
   }
 
   :root {
-    --color-a: #3b82f6;
-    --color-b: #f97316;
-    --glow-a: 0 0 12px #3b82f660, 0 0 24px #3b82f630;
-    --glow-b: 0 0 12px #f9731660, 0 0 24px #f9731630;
+    --color-a: #fbbf24;
+    --color-b: #d97706;
+    --glow-a: 0 0 12px #fbbf2450, 0 0 24px #fbbf2420;
+    --glow-b: 0 0 12px #d9770650, 0 0 24px #d9770620;
   }
 
   body {
     margin: 0;
-    background: #0a0c12;
-    color: #e2e8f0;
+    background: #0d0c09;
+    color: #e7e0d0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     user-select: none;
     overflow: hidden;
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  ::-webkit-scrollbar-thumb { background: #44403c; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #57534e; }
 
-  /* Range input — horizontal */
   input[type='range'] {
     -webkit-appearance: none;
     appearance: none;
@@ -38,7 +36,7 @@
   }
   input[type='range']::-webkit-slider-runnable-track {
     height: 3px;
-    background: #1e293b;
+    background: #292524;
     border-radius: 2px;
   }
   input[type='range']::-webkit-slider-thumb {
@@ -47,12 +45,12 @@
     width: 11px;
     height: 11px;
     border-radius: 50%;
-    background: #94a3b8;
+    background: #a8a29e;
     margin-top: -4px;
     transition: background 0.1s, transform 0.1s;
   }
   input[type='range']::-webkit-slider-thumb:hover {
-    background: #e2e8f0;
+    background: #fbbf24;
     transform: scale(1.2);
   }
   input[type='range']:active::-webkit-slider-thumb {
@@ -65,12 +63,12 @@
   .glow-b { box-shadow: var(--glow-b); }
 
   .glass {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 248, 230, 0.03);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 248, 230, 0.06);
   }
 
-  .deck-border-a { border-top: 2px solid #3b82f640; }
-  .deck-border-b { border-top: 2px solid #f9731640; }
+  .deck-border-a { border-top: 2px solid #fbbf2440; }
+  .deck-border-b { border-top: 2px solid #d9770640; }
 }

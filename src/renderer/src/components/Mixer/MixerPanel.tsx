@@ -12,7 +12,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
   const eq = useDeckStore((s) => s.decks[deckId].eq)
   const { setEq, setEqKill } = useDeckStore()
   const isA = deckId === 'A'
-  const color = isA ? '#3b82f6' : '#f97316'
+  const color = isA ? '#fbbf24' : '#d97706'
   const bands = ['high', 'mid', 'low'] as const
 
   const handleEq = (band: 'low' | 'mid' | 'high', db: number): void => {
@@ -28,7 +28,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
 
   return (
     <div className="flex flex-col items-center gap-2 px-2">
-      <span className={`text-xs font-black tracking-widest ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+      <span className={`text-xs font-black tracking-widest ${isA ? 'text-amber-400' : 'text-amber-600'}`}>
         {deckId}
       </span>
       {bands.map((band) => {
@@ -49,7 +49,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
               onClick={() => handleKill(band)}
               className={[
                 'text-[10px] font-bold px-2 py-1 rounded tracking-widest transition-colors',
-                kill ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'
+                kill ? 'bg-red-700 text-white' : 'text-stone-600 hover:text-stone-300'
               ].join(' ')}
             >
               KILL
@@ -105,7 +105,7 @@ export default function MixerPanel(): JSX.Element {
       style={{ width: 220, background: 'linear-gradient(180deg, #0b0d14 0%, #080a10 100%)', borderColor: 'rgba(255,255,255,0.06)' }}
       data-testid="mixer-panel"
     >
-      <div className="text-[10px] font-black tracking-[0.25em] text-slate-500">MIXER</div>
+      <div className="text-[10px] font-black tracking-[0.25em] text-stone-600">MIXER</div>
 
       {/* EQ channels */}
       <div className="flex gap-1 w-full justify-center">
@@ -113,7 +113,7 @@ export default function MixerPanel(): JSX.Element {
 
         {/* Master volume */}
         <div className="flex flex-col items-center gap-2 px-2" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-          <span className="text-xs text-slate-600">VOL</span>
+          <span className="text-xs text-stone-600">VOL</span>
           <input
             type="range" min={0} max={1} step={0.01}
             value={masterVolume}
@@ -121,7 +121,7 @@ export default function MixerPanel(): JSX.Element {
             className="accent-slate-400"
             style={{ writingMode: 'vertical-lr', direction: 'rtl', height: 80 }}
           />
-          <span className="text-xs font-mono text-slate-600">{Math.round(masterVolume * 100)}</span>
+          <span className="text-xs font-mono text-stone-600">{Math.round(masterVolume * 100)}</span>
         </div>
 
         <EqChannel deckId="B" />
@@ -132,14 +132,14 @@ export default function MixerPanel(): JSX.Element {
       {/* Crossfader */}
       <div className="flex flex-col items-center gap-1.5 w-full">
         <div className="flex justify-between w-full px-1 items-center">
-          <span className="text-[11px] font-black text-blue-400" style={{ textShadow: '0 0 8px #3b82f680' }}>A</span>
-          <span className="text-[9px] font-bold tracking-[0.2em] text-slate-600">XFADER</span>
-          <span className="text-[11px] font-black text-orange-400" style={{ textShadow: '0 0 8px #f9731680' }}>B</span>
+          <span className="text-[11px] font-black text-amber-400" style={{ textShadow: '0 0 8px #fbbf2460' }}>A</span>
+          <span className="text-[9px] font-bold tracking-[0.2em] text-stone-600">XFADER</span>
+          <span className="text-[11px] font-black text-amber-600" style={{ textShadow: '0 0 8px #d9770660' }}>B</span>
         </div>
         {/* Gradient track wrapper */}
         <div className="relative w-full flex items-center">
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, #3b82f660 0%, #1e293b 40%, #1e293b 60%, #f9731660 100%)' }} />
+            style={{ background: 'linear-gradient(90deg, #fbbf2460 0%, #292524 40%, #292524 60%, #d9770660 100%)' }} />
           <input
             type="range" min={0} max={1} step={0.001}
             value={crossfader}

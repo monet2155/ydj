@@ -26,7 +26,7 @@ export default function PitchControl({ deckId }: PitchControlProps): JSX.Element
       {/* BPM display */}
       <div className="flex justify-between items-center">
         <span className="text-xs text-slate-500">BPM</span>
-        <span className={`text-lg font-mono font-bold ${isA ? 'text-blue-300' : 'text-orange-300'}`}>
+        <span className={`text-lg font-mono font-bold ${isA ? 'text-amber-400' : 'text-amber-500'}`}>
           {currentBpm ? currentBpm.toFixed(1) : '—'}
         </span>
       </div>
@@ -41,7 +41,7 @@ export default function PitchControl({ deckId }: PitchControlProps): JSX.Element
           step={0.1}
           value={pitchPercent}
           onChange={(e) => handlePitchChange(parseFloat(e.target.value))}
-          className={`flex-1 ${isA ? 'accent-blue-500' : 'accent-orange-500'}`}
+          className={`flex-1 ${isA ? 'accent-amber-400' : 'accent-amber-500'}`}
         />
         <span className="text-xs text-slate-600 w-6">+10</span>
       </div>

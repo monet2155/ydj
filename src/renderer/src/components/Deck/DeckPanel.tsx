@@ -89,14 +89,14 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       style={{
         paddingBottom: 'var(--lib-height)',
         background: isA
-          ? 'linear-gradient(160deg, #080e1c 0%, #0a0c12 60%)'
-          : 'linear-gradient(160deg, #150b06 0%, #0a0c12 60%)',
+          ? 'linear-gradient(160deg, #120f08 0%, #0d0c09 60%)'
+          : 'linear-gradient(160deg, #110e07 0%, #0d0c09 60%)',
       }}
       data-testid={`deck-${deckId}`}
     >
       {/* Deck label */}
       <div className="flex items-center">
-        <span className={`text-base font-black tracking-widest ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+        <span className={`text-base font-black tracking-widest ${isA ? 'text-amber-400' : 'text-amber-600'}`}>
           DECK {deckId}
         </span>
       </div>
@@ -106,15 +106,15 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
         {deck.error ? (
           <span className="text-red-400 text-xs truncate">{deck.error}</span>
         ) : deck.track ? (
-          <span className="text-slate-300 text-xs truncate">{deck.track.title}</span>
+          <span className="text-stone-300 text-xs truncate">{deck.track.title}</span>
         ) : (
-          <span className="text-slate-600 text-xs">트랙 없음</span>
+          <span className="text-stone-600 text-xs">트랙 없음</span>
         )}
       </div>
 
       {/* Loading indicator */}
       {deck.isLoading && (
-        <div className={`text-xs font-mono ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+        <div className={`text-xs font-mono ${isA ? 'text-amber-400' : 'text-amber-600'}`}>
           로딩 중...
         </div>
       )}
@@ -122,16 +122,16 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       {/* Time display */}
       <div className="flex justify-between text-xs font-mono px-1">
         <div className="flex flex-col items-start">
-          <span className="text-[9px] text-slate-600 leading-none mb-0.5">elapsed</span>
-          <span className="text-slate-300">{formatTime(deck.position)}</span>
+          <span className="text-[9px] text-stone-600 leading-none mb-0.5">elapsed</span>
+          <span className="text-stone-300">{formatTime(deck.position)}</span>
         </div>
         <div className="flex flex-col items-center">
-          <span className="text-[9px] text-slate-600 leading-none mb-0.5">total</span>
-          <span className="text-slate-600">{deck.track ? formatTime(deck.track.duration) : '0:00'}</span>
+          <span className="text-[9px] text-stone-600 leading-none mb-0.5">total</span>
+          <span className="text-stone-600">{deck.track ? formatTime(deck.track.duration) : '0:00'}</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-[9px] text-slate-600 leading-none mb-0.5">remain</span>
-          <span className={isA ? 'text-blue-400' : 'text-orange-400'}>
+          <span className="text-[9px] text-stone-600 leading-none mb-0.5">remain</span>
+          <span className={isA ? 'text-amber-400' : 'text-amber-500'}>
             -{formatTime(Math.max(0, remaining))}
           </span>
         </div>
@@ -142,7 +142,8 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
         <button
           onClick={handleCue}
           title="재생 위치를 처음으로 되돌림 (CUE)"
-          className="px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold transition-colors shrink-0"
+          className="px-3 py-2 rounded text-stone-300 text-xs font-mono font-bold transition-colors shrink-0"
+          style={{ background: 'rgba(255,248,230,0.06)', border: '1px solid rgba(255,248,230,0.08)' }}
         >
           CUE
         </button>
@@ -152,12 +153,15 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
           className={[
             'flex-1 py-2.5 rounded text-base font-mono font-bold disabled:opacity-40 transition-all duration-150',
             deck.isPlaying
-              ? isA ? 'bg-blue-600 hover:bg-blue-500' : 'bg-orange-600 hover:bg-orange-500'
-              : 'bg-white/10 hover:bg-white/15'
+              ? isA ? 'bg-amber-500 hover:bg-amber-400' : 'bg-amber-700 hover:bg-amber-600'
+              : ''
           ].join(' ')}
           style={deck.isPlaying ? {
-            boxShadow: isA ? '0 0 16px #3b82f660, 0 0 32px #3b82f630' : '0 0 16px #f9731660, 0 0 32px #f9731630'
-          } : undefined}
+            boxShadow: isA ? '0 0 16px #fbbf2460, 0 0 32px #fbbf2425' : '0 0 16px #d9770660, 0 0 32px #d9770625',
+          } : {
+            background: 'rgba(255,248,230,0.07)',
+            border: '1px solid rgba(255,248,230,0.1)',
+          }}
         >
           {deck.isPlaying ? '⏸' : '▶'}
         </button>
@@ -170,7 +174,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
       <LoopControl deckId={deckId} />
 
       {/* SYNC + Pitch */}
-      <div className="border-t border-slate-800 pt-2 flex flex-col gap-2">
+      <div className="pt-2 flex flex-col gap-2" style={{ borderTop: '1px solid rgba(255,248,230,0.06)' }}>
         <div className="flex justify-end">
           <SyncButton deckId={deckId} />
         </div>
@@ -179,7 +183,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
 
       {/* Volume */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-600 w-6">VOL</span>
+        <span className="text-xs text-stone-600 w-6">VOL</span>
         <input
           type="range" min={0} max={1} step={0.01}
           value={deck.volume}

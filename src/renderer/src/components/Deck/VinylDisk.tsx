@@ -121,7 +121,7 @@ export default function VinylDisk({
       <div
         ref={diskRef}
         className="absolute inset-0 rounded-full cursor-grab active:cursor-grabbing"
-        style={{ background: 'radial-gradient(circle, #1e2433 50%, #0a0c12 100%)' }}
+        style={{ background: 'radial-gradient(circle, #1c1a14 50%, #0d0c09 100%)' }}
         onMouseDown={handleMouseDown}
       >
         {/* Groove rings */}
