@@ -102,7 +102,10 @@ export default function App(): JSX.Element {
   }, [])
 
   return (
-    <div className="flex flex-col h-screen bg-[#0f1117] text-slate-200 overflow-hidden relative">
+    <div
+      className="flex flex-col h-screen bg-[#0f1117] text-slate-200 overflow-hidden relative"
+      style={{ '--lib-height': `${libHeight}px` } as React.CSSProperties}
+    >
       {/* Header */}
       <header className="flex items-center justify-center h-7 bg-[#0a0d14] border-b border-slate-800 shrink-0">
         <span className="text-xs font-bold tracking-widest text-slate-500">YDJ</span>
