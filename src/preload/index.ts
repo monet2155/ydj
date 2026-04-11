@@ -15,6 +15,12 @@ export type DownloadResult =
   | { success: true; track: TrackInfo }
   | { success: false; error: string }
 
+export interface SearchResult {
+  videoId: string
+  title: string
+  duration: number
+}
+
 export interface LibraryTrack {
   videoId: string
   title: string
@@ -27,6 +33,7 @@ export interface ElectronAPI {
   youtube: {
     download: (url: string, deckId: DeckId) => Promise<DownloadResult>
     onProgress: (callback: (deckId: DeckId, percent: number) => void) => () => void
+    search: (query: string) => Promise<SearchResult[]>
   }
   audio: {
     readFile: (filePath: string) => Promise<ArrayBuffer | null>
@@ -43,6 +50,7 @@ export interface ElectronAPI {
 const api: ElectronAPI = {
   youtube: {
     download: (url, deckId) => ipcRenderer.invoke('youtube:download', url, deckId),
+    search: (query) => ipcRenderer.invoke('youtube:search', query),
     onProgress: (callback) => {
       const handler = (_: Electron.IpcRendererEvent, deckId: DeckId, percent: number): void =>
         callback(deckId, percent)

@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join, resolve, sep } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { downloadAudio, getCacheDir } from './ytdlp.js'
+import { downloadAudio, getCacheDir, searchYouTube } from './ytdlp.js'
 import { readLibrary, saveTrack } from './library.js'
 import { loadHotCues, saveHotCues } from './hotcues.js'
 
@@ -55,6 +55,7 @@ app.whenReady().then(() => {
     return result
   })
 
+  ipcMain.handle('youtube:search', (_e, query: string) => searchYouTube(query))
   ipcMain.handle('library:list', () => readLibrary())
   ipcMain.handle('hotcues:load', (_e, videoId: string) => loadHotCues(videoId))
   ipcMain.handle('hotcues:save', (_e, videoId: string, slots: (number | null)[]) => { saveHotCues(videoId, slots) })

@@ -21,6 +21,7 @@ export class DeckEngine {
   private _isPlaying = false
   private _playbackRate = 1
   private _volume = 1
+  private _onEnded: (() => void) | null = null
 
   // Loop
   private _loopStart: number | null = null
@@ -161,6 +162,11 @@ export class DeckEngine {
     return this.gainNode
   }
 
+  /** Called when the track naturally finishes playing (not on pause/stop/seek) */
+  set onEnded(cb: (() => void) | null) {
+    this._onEnded = cb
+  }
+
   // ── FX insert points (FxEngine rewires between these) ─────────────────────
 
   /** Signal source before the volume fader — FxEngine disconnects this from fxOutput */
@@ -201,6 +207,7 @@ export class DeckEngine {
       if (this.source === source && this._isPlaying) {
         this._isPlaying = false
         this.startOffset = 0
+        this._onEnded?.()
       }
     }
   }

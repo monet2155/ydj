@@ -54,6 +54,34 @@ export function getCacheDir(): string {
   return dir
 }
 
+export interface SearchResult {
+  videoId: string
+  title: string
+  duration: number
+}
+
+export function searchYouTube(query: string): Promise<SearchResult[]> {
+  return new Promise((resolve) => {
+    const ytdlp = findYtDlp()
+    const proc = spawn(ytdlp, [
+      `ytsearch5:${query}`,
+      '--flat-playlist',
+      '--print', '%(id)s\t%(title)s\t%(duration)s',
+    ])
+    let out = ''
+    proc.stdout.on('data', (c: Buffer) => { out += c.toString() })
+    proc.on('close', () => {
+      const results: SearchResult[] = out.trim().split('\n').filter(Boolean).flatMap((line) => {
+        const [id, title, dur] = line.split('\t')
+        if (!id || !/^[\w-]{11}$/.test(id.trim())) return []
+        return [{ videoId: id.trim(), title: title ?? 'Unknown', duration: parseFloat(dur ?? '0') || 0 }]
+      })
+      resolve(results)
+    })
+    proc.on('error', () => resolve([]))
+  })
+}
+
 export function getCachedPath(videoId: string, cacheDir?: string): string | null {
   const dir = cacheDir ?? getCacheDir()
   const path = join(dir, `${videoId}.m4a`)
