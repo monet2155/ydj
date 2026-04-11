@@ -123,8 +123,6 @@ export default function MixerPanel(): JSX.Element {
         <EqChannel deckId="B" />
       </div>
 
-      <div className="flex-1" />
-
       {/* Crossfader */}
       <div className="flex flex-col items-center gap-1 w-full">
         <div className="flex justify-between w-full text-xs px-1">
