@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 
 const CUE_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e',
@@ -50,6 +50,8 @@ export default function WaveformCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksRef = useRef<Float32Array | null>(null)
   const bufferRef = useRef<AudioBuffer | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragRef = useRef<{ startX: number; startPos: number } | null>(null)
 
   useEffect(() => {
     if (!audioBuffer) { peaksRef.current = null; bufferRef.current = null; return }
@@ -173,20 +175,49 @@ export default function WaveformCanvas({
 
   useEffect(() => { draw() }, [draw])
 
-  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>): void => {
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!onSeek || !duration) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const halfW = VISIBLE_SECONDS
-    const t = (position - halfW) + (x / rect.width) * (halfW * 2)
-    onSeek(Math.max(0, Math.min(duration, t)))
-  }
+    e.preventDefault()
+    dragRef.current = { startX: e.clientX, startPos: position }
+    setIsDragging(true)
+
+    const onMouseMove = (ev: MouseEvent): void => {
+      if (!dragRef.current) return
+      const dx = ev.clientX - dragRef.current.startX
+      const canvas = canvasRef.current
+      const width = canvas?.offsetWidth || 600
+      // Drag right → earlier time (negative delta), drag left → later time
+      const deltaSeconds = -(dx / width) * VISIBLE_SECONDS * 2
+      const t = Math.max(0, Math.min(duration, dragRef.current.startPos + deltaSeconds))
+      onSeek(t)
+    }
+
+    const onMouseUp = (ev: MouseEvent): void => {
+      // Click (no significant drag) → seek to clicked position
+      if (dragRef.current && Math.abs(ev.clientX - dragRef.current.startX) < 4) {
+        const canvas = canvasRef.current
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect()
+          const x = ev.clientX - rect.left
+          const t = (dragRef.current.startPos - VISIBLE_SECONDS) + (x / rect.width) * VISIBLE_SECONDS * 2
+          onSeek(Math.max(0, Math.min(duration, t)))
+        }
+      }
+      dragRef.current = null
+      setIsDragging(false)
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }, [onSeek, duration, position])
 
   return (
     <canvas
       ref={canvasRef}
-      onClick={handleClick}
-      className="w-full h-full rounded cursor-pointer"
+      onMouseDown={handleMouseDown}
+      className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
     />
   )
 }
