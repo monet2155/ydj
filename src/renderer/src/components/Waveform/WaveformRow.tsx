@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useAudioBuffers } from '../../store/audioBufferStore.js'
 import { useDeckStore } from '../../store/deckStore.js'
 import { getDeckEngine } from '../../hooks/useAudio.js'
@@ -8,6 +9,10 @@ export default function WaveformRow(): JSX.Element {
   const deckA = useDeckStore((s) => s.decks['A'])
   const deckB = useDeckStore((s) => s.decks['B'])
   const { setPosition } = useDeckStore()
+
+  // Track whether each deck was playing before waveform drag started
+  const wasPlayingA = useRef(false)
+  const wasPlayingB = useRef(false)
 
   return (
     <div className="flex shrink-0 border-b border-slate-800" style={{ height: 110 }}>
@@ -21,6 +26,8 @@ export default function WaveformRow(): JSX.Element {
           hotCues={deckA.hotCues}
           loop={deckA.loop}
           onSeek={(sec) => { getDeckEngine('A').seek(sec); setPosition('A', sec) }}
+          onDragStart={() => { wasPlayingA.current = deckA.isPlaying; getDeckEngine('A').pause() }}
+          onDragEnd={() => { if (wasPlayingA.current) getDeckEngine('A').play() }}
         />
       </div>
       {/* Deck B waveform */}
@@ -33,6 +40,8 @@ export default function WaveformRow(): JSX.Element {
           hotCues={deckB.hotCues}
           loop={deckB.loop}
           onSeek={(sec) => { getDeckEngine('B').seek(sec); setPosition('B', sec) }}
+          onDragStart={() => { wasPlayingB.current = deckB.isPlaying; getDeckEngine('B').pause() }}
+          onDragEnd={() => { if (wasPlayingB.current) getDeckEngine('B').play() }}
         />
       </div>
     </div>

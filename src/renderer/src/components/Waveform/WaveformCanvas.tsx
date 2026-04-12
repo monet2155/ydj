@@ -13,6 +13,8 @@ interface WaveformCanvasProps {
   hotCues?: (number | null)[]
   loop?: { active: boolean; start: number | null; end: number | null }
   onSeek?: (sec: number) => void
+  onDragStart?: () => void
+  onDragEnd?: () => void
 }
 
 // High-res peaks: one peak per 10ms
@@ -46,6 +48,8 @@ export default function WaveformCanvas({
   hotCues,
   loop,
   onSeek,
+  onDragStart,
+  onDragEnd,
 }: WaveformCanvasProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const peaksRef = useRef<Float32Array | null>(null)
@@ -180,6 +184,7 @@ export default function WaveformCanvas({
     e.preventDefault()
     dragRef.current = { startX: e.clientX, startPos: position }
     setIsDragging(true)
+    onDragStart?.()
 
     const onMouseMove = (ev: MouseEvent): void => {
       if (!dragRef.current) return
@@ -205,13 +210,14 @@ export default function WaveformCanvas({
       }
       dragRef.current = null
       setIsDragging(false)
+      onDragEnd?.()
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
     }
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
-  }, [onSeek, duration, position])
+  }, [onSeek, onDragStart, onDragEnd, duration, position])
 
   return (
     <canvas
