@@ -244,7 +244,13 @@ export class DeckEngine {
       if (this.source === source && this._isPlaying) {
         this._isPlaying = false
         this.startOffset = 0
-        this._onEnded?.()
+        if (this._isReverse) {
+          // Reached position 0 during reverse playback — reset to forward mode.
+          // Don't fire _onEnded: we hit the beginning, not the end of the track.
+          this._isReverse = false
+        } else {
+          this._onEnded?.()
+        }
       }
     }
   }

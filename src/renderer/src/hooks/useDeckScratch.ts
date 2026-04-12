@@ -67,6 +67,11 @@ export function useDeckScratch(deckId: DeckId): ScratchHandlers {
       } else {
         engine.playbackRate = restoreRate
       }
+      // Engine may have stopped if reverse scratch reached position 0.
+      // Restart from the current offset (0 = beginning of track) at the restored rate.
+      if (!engine.isPlaying) {
+        engine.play()
+      }
       setPlaying(deckId, true)
     } else {
       setPlaying(deckId, false)
