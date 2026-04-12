@@ -23,6 +23,13 @@ export function getMixerEngine(): MixerEngine {
 
 export function getDeckEngine(deckId: 'A' | 'B'): DeckEngine {
   const key = `__ydj_deck_${deckId}`
+  const existing = w[key] as DeckEngine | undefined
+  // If the cached instance is stale (HMR replaced DeckEngine but window still holds
+  // the old object), clear it so we create a fresh one with the current API.
+  if (existing && typeof existing.setDirection !== 'function') {
+    delete w[key]
+    delete w[`__ydj_fx_${deckId}`]
+  }
   if (!w[key]) {
     const ctx = getAudioEngine().ctx
     const deck = new DeckEngine(ctx)
