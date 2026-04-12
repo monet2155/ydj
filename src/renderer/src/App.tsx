@@ -113,14 +113,7 @@ export default function App(): JSX.Element {
       {/* Header */}
       <header className="flex items-center justify-center h-8 shrink-0 relative border-b border-white/5"
         style={{ background: 'linear-gradient(180deg, #0d1018 0%, #0a0c12 100%)' }}>
-        <span
-          className="text-xs font-black tracking-[0.3em]"
-          style={{
-            background: 'linear-gradient(90deg, #3b82f6, #a78bfa, #f97316)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
+        <span className="text-xs font-black tracking-[0.3em] text-slate-400">
           YDJ
         </span>
       </header>

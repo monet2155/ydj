@@ -11,8 +11,6 @@ type AutoDuration = typeof AUTO_DURATIONS[number]
 function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
   const eq = useDeckStore((s) => s.decks[deckId].eq)
   const { setEq, setEqKill } = useDeckStore()
-  const isA = deckId === 'A'
-  const color = isA ? '#3b82f6' : '#f97316'
   const bands = ['high', 'mid', 'low'] as const
 
   const handleEq = (band: 'low' | 'mid' | 'high', db: number): void => {
@@ -28,7 +26,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
 
   return (
     <div className="flex flex-col items-center gap-2 px-2">
-      <span className={`text-xs font-black tracking-widest ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+      <span className="text-xs font-black tracking-widest text-slate-500">
         {deckId}
       </span>
       {bands.map((band) => {
@@ -41,7 +39,7 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
               max={6}
               defaultValue={0}
               label={band.toUpperCase()}
-              color={kill ? '#ef4444' : color}
+              color={kill ? '#ef4444' : '#64748b'}
               size={38}
               onChange={(db) => { if (!kill) handleEq(band, db) }}
             />
@@ -132,14 +130,14 @@ export default function MixerPanel(): JSX.Element {
       {/* Crossfader */}
       <div className="flex flex-col items-center gap-1.5 w-full">
         <div className="flex justify-between w-full px-1 items-center">
-          <span className="text-[11px] font-black text-blue-400" style={{ textShadow: '0 0 8px #3b82f680' }}>A</span>
+          <span className="text-[11px] font-black text-slate-400">A</span>
           <span className="text-[9px] font-bold tracking-[0.2em] text-slate-600">XFADER</span>
-          <span className="text-[11px] font-black text-orange-400" style={{ textShadow: '0 0 8px #f9731680' }}>B</span>
+          <span className="text-[11px] font-black text-slate-400">B</span>
         </div>
         {/* Gradient track wrapper */}
         <div className="relative w-full flex items-center">
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, #3b82f660 0%, #1e293b 40%, #1e293b 60%, #f9731660 100%)' }} />
+            style={{ background: '#1e293b' }} />
           <input
             type="range" min={0} max={1} step={0.001}
             value={crossfader}

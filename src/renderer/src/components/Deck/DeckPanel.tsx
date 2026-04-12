@@ -85,12 +85,10 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
 
   return (
     <div
-      className={`flex flex-col flex-1 p-3 gap-2 overflow-y-auto ${isA ? 'deck-border-a' : 'deck-border-b'}`}
+      className="flex flex-col flex-1 p-3 gap-2 overflow-y-auto border-t border-slate-800"
       style={{
         paddingBottom: 'var(--lib-height)',
-        background: isA
-          ? 'linear-gradient(160deg, #080e1c 0%, #0a0c12 60%)'
-          : 'linear-gradient(160deg, #150b06 0%, #0a0c12 60%)',
+        background: '#0a0c12',
       }}
       data-testid={`deck-${deckId}`}
     >
@@ -114,7 +112,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
 
       {/* Loading indicator */}
       {deck.isLoading && (
-        <div className={`text-xs font-mono ${isA ? 'text-blue-400' : 'text-orange-400'}`}>
+        <div className="text-xs font-mono text-slate-500">
           로딩 중...
         </div>
       )}
@@ -131,7 +129,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[9px] text-slate-600 leading-none mb-0.5">remain</span>
-          <span className={isA ? 'text-blue-400' : 'text-orange-400'}>
+          <span className="text-slate-400">
             -{formatTime(Math.max(0, remaining))}
           </span>
         </div>
