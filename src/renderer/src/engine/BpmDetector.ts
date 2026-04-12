@@ -1,101 +1,104 @@
 /**
- * BpmDetector — lightweight peak-based BPM detection
+ * BpmDetector — autocorrelation-based BPM detection
  *
  * Algorithm:
- * 1. Downsample to mono
- * 2. Find onset peaks (energy threshold)
- * 3. Compute inter-onset intervals
- * 4. Histogram of intervals → find dominant interval → BPM
+ * 1. Downsample to ~4 kHz with averaging (low-pass + decimate → bass/kick focus)
+ * 2. RMS energy per 10 ms frame
+ * 3. Onset strength = positive half-wave rectified first difference of energy
+ * 4. Autocorrelation of onset strength in the 60–200 BPM lag range
+ * 5. Parabolic interpolation for sub-frame precision
+ * 6. Octave correction (halve if >160, double if <80)
+ *
+ * Works far better than peak-interval histogram on real music because
+ * autocorrelation finds the *repeating pattern* rather than individual loud peaks.
  */
 
 const MIN_BPM = 60
 const MAX_BPM = 200
+const TARGET_RATE = 4000   // Hz — sufficient for kick/bass onset detection
+const FRAME_MS   = 10      // ms per RMS energy frame
 
-/**
- * Detect BPM from raw PCM samples.
- * Returns BPM as a float, or 0 if detection failed.
- */
 export function detectBpmFromPeaks(samples: Float32Array, sampleRate: number): number {
-  // 1. Compute energy envelope (RMS over small windows)
-  const windowSize = Math.floor(sampleRate * 0.01) // 10ms windows
-  const energies: number[] = []
-
-  for (let i = 0; i < samples.length - windowSize; i += windowSize) {
-    let sum = 0
-    for (let j = 0; j < windowSize; j++) {
-      sum += samples[i + j] ** 2
-    }
-    energies.push(Math.sqrt(sum / windowSize))
+  // ── 1. Downsample with averaging (anti-aliased decimation) ─────────────────
+  const step = Math.max(1, Math.floor(sampleRate / TARGET_RATE))
+  const actualRate = sampleRate / step
+  const dsLen = Math.floor(samples.length / step)
+  const ds = new Float32Array(dsLen)
+  for (let i = 0; i < dsLen; i++) {
+    let s = 0
+    const base = i * step
+    for (let j = 0; j < step; j++) s += Math.abs(samples[base + j])
+    ds[i] = s / step
   }
 
-  // 2. Find peaks: local maxima above adaptive threshold
-  const threshold = computeAdaptiveThreshold(energies)
-  const peakIndices: number[] = []
-  const minPeakGap = Math.floor((60 / MAX_BPM) * sampleRate / windowSize)
+  // ── 2. RMS energy per frame ────────────────────────────────────────────────
+  const frameSize = Math.max(1, Math.round(actualRate * FRAME_MS / 1000))
+  const numFrames = Math.floor(dsLen / frameSize)
+  if (numFrames < 20) return 0
 
-  for (let i = 1; i < energies.length - 1; i++) {
-    if (
-      energies[i] > threshold &&
-      energies[i] > energies[i - 1] &&
-      energies[i] >= energies[i + 1]
-    ) {
-      if (peakIndices.length === 0 || i - peakIndices[peakIndices.length - 1] >= minPeakGap) {
-        peakIndices.push(i)
-      }
-    }
+  const energy = new Float32Array(numFrames)
+  for (let f = 0; f < numFrames; f++) {
+    let s = 0
+    const base = f * frameSize
+    for (let j = 0; j < frameSize; j++) s += ds[base + j] ** 2
+    energy[f] = Math.sqrt(s / frameSize)
   }
 
-  if (peakIndices.length < 4) return 0
-
-  // 3. Compute inter-onset intervals in samples
-  const intervals: number[] = []
-  for (let i = 1; i < peakIndices.length; i++) {
-    const diffFrames = peakIndices[i] - peakIndices[i - 1]
-    const diffSec = (diffFrames * windowSize) / sampleRate
-    const bpm = 60 / diffSec
-    if (bpm >= MIN_BPM && bpm <= MAX_BPM) {
-      intervals.push(bpm)
-    }
+  // ── 3. Onset strength: positive half-wave rectified first difference ───────
+  //   Captures beats as sharp energy rises while ignoring slow fades.
+  const onset = new Float32Array(numFrames)
+  for (let f = 1; f < numFrames; f++) {
+    onset[f] = Math.max(0, energy[f] - energy[f - 1])
   }
 
-  if (intervals.length === 0) return 0
+  // ── 4. Autocorrelation of onset strength in BPM lag range ─────────────────
+  //   acf[lag] is high when the onset pattern repeats every `lag` frames,
+  //   i.e. beat period = lag * frameSize / actualRate seconds.
+  const minLag = Math.max(1, Math.floor(actualRate * 60 / (MAX_BPM * frameSize)))
+  const maxLag = Math.floor(actualRate * 60 / (MIN_BPM * frameSize))
+  if (minLag >= maxLag) return 0
 
-  // 4. Histogram of BPM values (1 BPM buckets)
-  const hist = new Map<number, number>()
-  for (const bpm of intervals) {
-    const bucket = Math.round(bpm)
-    hist.set(bucket, (hist.get(bucket) ?? 0) + 1)
+  const acf = new Float32Array(maxLag + 1)
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let s = 0
+    const n = numFrames - lag
+    for (let i = 0; i < n; i++) s += onset[i] * onset[i + lag]
+    acf[lag] = s
   }
 
-  // Find bucket with most votes
-  let bestBpm = 0
-  let bestCount = 0
-  for (const [bpm, count] of hist) {
-    if (count > bestCount) {
-      bestCount = count
-      bestBpm = bpm
+  // Find the lag with the strongest autocorrelation
+  let bestLag = minLag
+  let bestScore = acf[minLag]
+  for (let lag = minLag + 1; lag <= maxLag; lag++) {
+    if (acf[lag] > bestScore) {
+      bestScore = acf[lag]
+      bestLag = lag
     }
   }
+  if (bestScore <= 0) return 0
 
-  // Refine: average of all intervals within ±3 BPM of winner
-  const nearby = intervals.filter((b) => Math.abs(b - bestBpm) <= 3)
-  return nearby.reduce((a, b) => a + b, 0) / nearby.length
+  // ── 5. Parabolic interpolation for sub-frame precision ────────────────────
+  let refinedLag = bestLag
+  if (bestLag > minLag && bestLag < maxLag) {
+    const y0 = acf[bestLag - 1], y1 = acf[bestLag], y2 = acf[bestLag + 1]
+    const denom = 2 * (2 * y1 - y0 - y2)
+    if (denom > 0) refinedLag = bestLag + (y0 - y2) / denom
+  }
+
+  const beatPeriodSec = (refinedLag * frameSize) / actualRate
+  let bpm = 60 / beatPeriodSec
+
+  // ── 6. Octave correction ───────────────────────────────────────────────────
+  //   Autocorrelation can lock onto half or double the true beat period.
+  //   Snap to the musically sensible range with a single halve or double.
+  if (bpm < 80 && bpm * 2 <= MAX_BPM) bpm *= 2
+  else if (bpm > 160 && bpm / 2 >= MIN_BPM) bpm /= 2
+
+  return Math.max(MIN_BPM, Math.min(MAX_BPM, bpm))
 }
 
-function computeAdaptiveThreshold(energies: number[]): number {
-  // Use the mean + 0.5 std as threshold
-  const mean = energies.reduce((a, b) => a + b, 0) / energies.length
-  const variance = energies.reduce((a, b) => a + (b - mean) ** 2, 0) / energies.length
-  return mean + Math.sqrt(variance) * 0.5
-}
-
-/**
- * Detect BPM from an AudioBuffer (uses first channel only).
- * Runs synchronously — call from a Web Worker for large files.
- */
 export function detectBpmFromBuffer(buffer: AudioBuffer): number {
-  const samples = buffer.getChannelData(0)
-  return detectBpmFromPeaks(samples, buffer.sampleRate)
+  return detectBpmFromPeaks(buffer.getChannelData(0), buffer.sampleRate)
 }
 
 /**
@@ -103,12 +106,10 @@ export function detectBpmFromBuffer(buffer: AudioBuffer): number {
  */
 export function tapBpm(timestamps: number[]): number | null {
   if (timestamps.length < 2) return null
-
   const intervals: number[] = []
   for (let i = 1; i < timestamps.length; i++) {
     intervals.push(timestamps[i] - timestamps[i - 1])
   }
-
-  const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length
-  return 60000 / avgInterval
+  const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length
+  return 60000 / avg
 }
