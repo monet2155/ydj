@@ -27,6 +27,7 @@ export interface LibraryTrack {
   duration: number
   filePath: string
   addedAt: number
+  bpm?: number
 }
 
 export interface ElectronAPI {
@@ -40,6 +41,7 @@ export interface ElectronAPI {
   }
   library: {
     list: () => Promise<LibraryTrack[]>
+    updateBpm: (videoId: string, bpm: number) => Promise<void>
   }
   hotcues: {
     load: (videoId: string) => Promise<(number | null)[]>
@@ -62,7 +64,8 @@ const api: ElectronAPI = {
     readFile: (filePath) => ipcRenderer.invoke('audio:readFile', filePath)
   },
   library: {
-    list: () => ipcRenderer.invoke('library:list')
+    list: () => ipcRenderer.invoke('library:list'),
+    updateBpm: (videoId, bpm) => ipcRenderer.invoke('library:updateBpm', videoId, bpm)
   },
   hotcues: {
     load: (videoId) => ipcRenderer.invoke('hotcues:load', videoId),

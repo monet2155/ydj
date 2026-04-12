@@ -3,7 +3,7 @@ import { join, resolve, sep } from 'path'
 import { readFile } from 'fs/promises'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { downloadAudio, getCacheDir, searchYouTube } from './ytdlp.js'
-import { readLibrary, saveTrack } from './library.js'
+import { readLibrary, saveTrack, updateBpm } from './library.js'
 import { loadHotCues, saveHotCues } from './hotcues.js'
 
 function createWindow(): void {
@@ -57,6 +57,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('youtube:search', (_e, query: string) => searchYouTube(query))
   ipcMain.handle('library:list', () => readLibrary())
+  ipcMain.handle('library:updateBpm', (_e, videoId: string, bpm: number) => { updateBpm(videoId, bpm) })
   ipcMain.handle('hotcues:load', (_e, videoId: string) => loadHotCues(videoId))
   ipcMain.handle('hotcues:save', (_e, videoId: string, slots: (number | null)[]) => { saveHotCues(videoId, slots) })
 

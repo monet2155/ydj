@@ -8,6 +8,7 @@ export interface LibraryTrack {
   duration: number
   filePath: string
   addedAt: number
+  bpm?: number
 }
 
 interface LibraryFile {
@@ -29,6 +30,15 @@ export function readLibrary(): LibraryTrack[] {
   } catch {
     return []
   }
+}
+
+export function updateBpm(videoId: string, bpm: number): void {
+  const path = getLibraryPath()
+  const tracks = readLibrary()
+  const idx = tracks.findIndex((t) => t.videoId === videoId)
+  if (idx < 0) return
+  tracks[idx] = { ...tracks[idx], bpm }
+  writeFileSync(path, JSON.stringify({ tracks }, null, 2), 'utf-8')
 }
 
 export function saveTrack(track: Omit<LibraryTrack, 'addedAt'>): void {

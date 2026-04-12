@@ -194,6 +194,7 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
             <thead className="sticky top-0 bg-[#0a0d14] text-slate-600">
               <tr>
                 <th className="text-left px-3 py-1 font-normal">제목</th>
+                <th className="text-right px-3 py-1 font-normal w-16">BPM</th>
                 <th className="text-right px-3 py-1 font-normal w-14">길이</th>
                 <th className="w-36 px-3 py-1" />
               </tr>
@@ -212,6 +213,12 @@ export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element
                   >
                     <td className="px-3 py-1.5 max-w-0 w-full">
                       <span className="truncate block" title={track.title}>{track.title}</span>
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap">
+                      {track.bpm
+                        ? <span className="text-slate-400">{track.bpm.toFixed(1)}</span>
+                        : <span className="text-slate-700">—</span>
+                      }
                     </td>
                     <td className="px-3 py-1.5 text-right text-slate-500 font-mono tabular-nums whitespace-nowrap">
                       {formatTime(track.duration)}
