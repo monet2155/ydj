@@ -6,7 +6,7 @@ interface VinylDiskProps {
   label: string    // 'A' | 'B'
   hasTrack?: boolean
   onScratchStart: () => void
-  onScratch: (deltaSeconds: number) => void
+  onScratch: (deltaSeconds: number, timeDeltaSec: number) => void
   onScratchEnd: () => void
 }
 
@@ -27,6 +27,7 @@ export default function VinylDisk({
   const isDraggingRef = useRef(false)
   const [isDragging, setIsDragging] = useState(false)
   const lastMouseAngleRef = useRef(0)
+  const lastMoveTimeRef = useRef(0)
   const rafRef = useRef(0)
   const isPlayingRef = useRef(isPlaying)
   isPlayingRef.current = isPlaying
@@ -79,7 +80,10 @@ export default function VinylDisk({
 
       // 1 full revolution (360°) = 60/33 seconds at 33 RPM
       const deltaSeconds = (delta / 360) * (60 / 33)
-      onScratch(deltaSeconds)
+      const now = performance.now()
+      const timeDeltaSec = Math.max(0.001, (now - lastMoveTimeRef.current) / 1000)
+      lastMoveTimeRef.current = now
+      onScratch(deltaSeconds, timeDeltaSec)
     }
 
     const onUp = (): void => {
@@ -102,6 +106,7 @@ export default function VinylDisk({
     isDraggingRef.current = true
     setIsDragging(true)
     lastMouseAngleRef.current = getMouseAngle(e.nativeEvent)
+    lastMoveTimeRef.current = performance.now()
     onScratchStart()
   }
 

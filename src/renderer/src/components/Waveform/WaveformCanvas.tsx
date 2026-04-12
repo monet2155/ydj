@@ -14,6 +14,7 @@ interface WaveformCanvasProps {
   loop?: { active: boolean; start: number | null; end: number | null }
   onSeek?: (sec: number) => void
   onDragStart?: () => void
+  onScratch?: (deltaSeconds: number, timeDeltaSec: number) => void
   onDragEnd?: () => void
 }
 
@@ -49,6 +50,7 @@ export default function WaveformCanvas({
   loop,
   onSeek,
   onDragStart,
+  onScratch,
   onDragEnd,
 }: WaveformCanvasProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -180,28 +182,37 @@ export default function WaveformCanvas({
   useEffect(() => { draw() }, [draw])
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>): void => {
-    if (!onSeek || !duration) return
+    if (!duration) return
     e.preventDefault()
     dragRef.current = { startX: e.clientX, startPos: position }
     setIsDragging(true)
     onDragStart?.()
 
+    let lastX = e.clientX
+    let lastTime = performance.now()
+
     const onMouseMove = (ev: MouseEvent): void => {
       if (!dragRef.current) return
-      const dx = ev.clientX - dragRef.current.startX
       const canvas = canvasRef.current
       const width = canvas?.offsetWidth || 600
-      // Drag right → earlier time (negative delta), drag left → later time
-      const deltaSeconds = -(dx / width) * VISIBLE_SECONDS * 2
-      const t = Math.max(0, Math.min(duration, dragRef.current.startPos + deltaSeconds))
-      onSeek(t)
+      const now = performance.now()
+
+      // Incremental delta per frame for rate calculation
+      const dxIncremental = ev.clientX - lastX
+      const timeDeltaSec = Math.max(0.001, (now - lastTime) / 1000)
+      // Drag right → earlier time (negative delta)
+      const deltaSeconds = -(dxIncremental / width) * VISIBLE_SECONDS * 2
+      lastX = ev.clientX
+      lastTime = now
+
+      onScratch?.(deltaSeconds, timeDeltaSec)
     }
 
     const onMouseUp = (ev: MouseEvent): void => {
       // Click (no significant drag) → seek to clicked position
       if (dragRef.current && Math.abs(ev.clientX - dragRef.current.startX) < 4) {
         const canvas = canvasRef.current
-        if (canvas) {
+        if (canvas && onSeek) {
           const rect = canvas.getBoundingClientRect()
           const x = ev.clientX - rect.left
           const t = (dragRef.current.startPos - VISIBLE_SECONDS) + (x / rect.width) * VISIBLE_SECONDS * 2
@@ -217,7 +228,7 @@ export default function WaveformCanvas({
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
-  }, [onSeek, onDragStart, onDragEnd, duration, position])
+  }, [onSeek, onDragStart, onScratch, onDragEnd, duration, position])
 
   return (
     <canvas
