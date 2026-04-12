@@ -55,6 +55,7 @@ function generateReverbIR(ctx: AudioContext, decaySeconds: number): AudioBuffer 
 
 export class FxEngine {
   private ctx: AudioContext
+  private lastReverbParam = -1
 
   // Filter
   private filterSlot: FxSlot
@@ -144,10 +145,12 @@ export class FxEngine {
   }
 
   setReverb(enabled: boolean, wet: number, param: number): void {
-    // param 0→1 → room size 0.5→4.5s (only recreates IR, no automation)
-    if (enabled) {
+    // param 0→1 → room size 0.5→4.5s
+    // Only regenerate IR when param changes meaningfully — buffer generation is expensive
+    if (enabled && Math.abs(param - this.lastReverbParam) > 0.05) {
       const decaySeconds = 0.5 + param * 4
       this.reverbNode.buffer = generateReverbIR(this.ctx, decaySeconds)
+      this.lastReverbParam = param
     }
     this.reverbSlot.apply(this.ctx, enabled, wet)
   }

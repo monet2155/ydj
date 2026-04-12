@@ -9,12 +9,17 @@ import { useDeckStore, type DeckId } from './store/deckStore'
 import { useDeckScratch } from './hooks/useDeckScratch'
 import { useQueueStore } from './store/queueStore'
 import { getDeckEngine } from './hooks/useAudio'
+import type { ScratchHandlers } from './hooks/useDeckScratch'
 
-function DeckDisk({ deckId }: { deckId: DeckId }): JSX.Element {
+interface DeckDiskProps {
+  deckId: DeckId
+  scratch: ScratchHandlers
+}
+
+function DeckDisk({ deckId, scratch }: DeckDiskProps): JSX.Element {
   const isPlaying = useDeckStore((s) => s.decks[deckId].isPlaying)
   const hasTrack = useDeckStore((s) => s.decks[deckId].track !== null)
   const color = deckId === 'A' ? '#3b82f6' : '#f97316'
-  const scratch = useDeckScratch(deckId)
   return (
     <div className="flex items-center justify-center w-44 shrink-0 bg-[#0a0d14] border-x border-slate-800 py-3">
       <VinylDisk isPlaying={isPlaying} color={color} label={deckId} hasTrack={hasTrack} {...scratch} />
@@ -29,6 +34,10 @@ export default function App(): JSX.Element {
   const dequeueRef = useRef(useQueueStore.getState().dequeue)
   dequeueRef.current = useQueueStore.getState().dequeue
 
+  // Single scratch instance per deck — shared between VinylDisk and WaveformRow
+  const scratchA = useDeckScratch('A')
+  const scratchB = useDeckScratch('B')
+
   useEffect(() => { fetchTracks() }, [fetchTracks])
 
   const handleLibraryLoad = (
@@ -42,7 +51,7 @@ export default function App(): JSX.Element {
 
   // Library open/resize state
   const CLOSED_H = 28
-  const SNAP_THRESHOLD = 80   // below this on release → snap closed
+  const SNAP_THRESHOLD = 80
   const DEFAULT_OPEN_H = 220
 
   const [libHeight, setLibHeight] = useState(CLOSED_H)
@@ -54,7 +63,7 @@ export default function App(): JSX.Element {
 
   const onDragMove = useCallback((e: MouseEvent) => {
     if (!dragState.current) return
-    const delta = dragState.current.startY - e.clientY  // drag up → taller
+    const delta = dragState.current.startY - e.clientY
     const next = Math.max(CLOSED_H, Math.min(520, dragState.current.startH + delta))
     setLibHeight(next)
   }, [])
@@ -64,7 +73,6 @@ export default function App(): JSX.Element {
     setIsDragging(false)
     document.removeEventListener('mousemove', onDragMove)
     document.removeEventListener('mouseup', onDragEnd)
-    // Snap: below threshold → close, above → keep & remember height
     setLibHeight((h) => {
       if (h < SNAP_THRESHOLD) return CLOSED_H
       lastOpenH.current = h
@@ -87,7 +95,6 @@ export default function App(): JSX.Element {
     })
   }
 
-  // Wire queue auto-load: when a deck finishes naturally, load next from queue
   useEffect(() => {
     const decks: DeckId[] = ['A', 'B']
     decks.forEach((deckId) => {
@@ -118,19 +125,19 @@ export default function App(): JSX.Element {
         </span>
       </header>
 
-      {/* Waveforms — full width, side by side */}
-      <WaveformRow />
+      {/* Waveforms */}
+      <WaveformRow scratchA={scratchA} scratchB={scratchB} />
 
-      {/* Middle: flex-1 so it fills whatever space the library doesn't take */}
+      {/* Middle */}
       <div className="flex flex-1 min-h-0 border-b border-white/5">
         <DeckPanel ref={deckARef} deckId="A" />
-        <DeckDisk deckId="A" />
+        <DeckDisk deckId="A" scratch={scratchA} />
         <MixerPanel />
-        <DeckDisk deckId="B" />
+        <DeckDisk deckId="B" scratch={scratchB} />
         <DeckPanel ref={deckBRef} deckId="B" />
       </div>
 
-      {/* Library — absolute overlay anchored to bottom, drag to open/close/resize */}
+      {/* Library */}
       <div
         className="absolute left-0 right-0 bottom-0 flex flex-col overflow-hidden"
         style={{
@@ -140,13 +147,11 @@ export default function App(): JSX.Element {
           background: 'linear-gradient(180deg, #0b0d15 0%, #080a10 100%)',
         }}
       >
-        {/* Drag handle */}
         <div
           className="h-7 shrink-0 flex items-center px-3 gap-2 select-none cursor-ns-resize group"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
           onMouseDown={onDragStart}
         >
-          {/* Drag indicator */}
           <div className="w-8 flex flex-col gap-[3px] opacity-20 group-hover:opacity-50 transition-opacity">
             <div className="h-px bg-slate-400 rounded" />
             <div className="h-px bg-slate-400 rounded" />
@@ -163,8 +168,6 @@ export default function App(): JSX.Element {
             {isLibOpen ? '▾' : '▴'}
           </button>
         </div>
-
-        {/* Panel content — rendered even when animating so it doesn't flash */}
         <div className="flex-1 min-h-0" style={{ visibility: isLibOpen ? 'visible' : 'hidden' }}>
           <LibraryPanel onLoad={handleLibraryLoad} />
         </div>

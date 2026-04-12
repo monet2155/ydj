@@ -1,17 +1,19 @@
 import { useAudioBuffers } from '../../store/audioBufferStore.js'
 import { useDeckStore } from '../../store/deckStore.js'
 import { getDeckEngine } from '../../hooks/useAudio.js'
-import { useDeckScratch } from '../../hooks/useDeckScratch.js'
+import type { ScratchHandlers } from '../../hooks/useDeckScratch.js'
 import WaveformCanvas from './WaveformCanvas.js'
 
-export default function WaveformRow(): JSX.Element {
+interface WaveformRowProps {
+  scratchA: ScratchHandlers
+  scratchB: ScratchHandlers
+}
+
+export default function WaveformRow({ scratchA, scratchB }: WaveformRowProps): JSX.Element {
   const buffers = useAudioBuffers()
   const deckA = useDeckStore((s) => s.decks['A'])
   const deckB = useDeckStore((s) => s.decks['B'])
   const { setPosition } = useDeckStore()
-
-  const scratchA = useDeckScratch('A')
-  const scratchB = useDeckScratch('B')
 
   return (
     <div className="flex shrink-0 border-b border-slate-800" style={{ height: 110 }}>

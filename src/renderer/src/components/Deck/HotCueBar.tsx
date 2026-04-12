@@ -27,7 +27,7 @@ export default function HotCueBar({ deckId }: HotCueBarProps): JSX.Element {
     const slots = [...deck.hotCues]
     slots[i] = pos
     setHotCue(deckId, i, pos)
-    window.electronAPI.hotcues.save(videoId, slots)
+    window.electronAPI.hotcues.save(videoId, slots).catch(console.error)
   }
 
   const handleJump = (i: number): void => {
@@ -47,7 +47,7 @@ export default function HotCueBar({ deckId }: HotCueBarProps): JSX.Element {
     const slots = [...deck.hotCues]
     slots[i] = null
     setHotCue(deckId, i, null)
-    window.electronAPI.hotcues.save(videoId, slots)
+    window.electronAPI.hotcues.save(videoId, slots).catch(console.error)
   }
 
   return (
