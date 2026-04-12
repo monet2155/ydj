@@ -26,10 +26,16 @@ export function useDeckScratch(deckId: DeckId) {
   const onScratch = useCallback((deltaSeconds: number, timeDeltaSec: number): void => {
     const engine = getDeckEngine(deckId)
     if (wasPlayingRef.current) {
-      // Rate = audio seconds per real second → produces pitch-shifted scratch sound
       const rate = timeDeltaSec > 0 ? deltaSeconds / timeDeltaSec : 0
-      // Clamp: Web Audio can't reverse; freeze for backward motion
-      engine.playbackRate = Math.max(0, Math.min(8, rate))
+      if (rate >= 0) {
+        // Forward: set playback rate → pitch-shifted scratch sound
+        engine.playbackRate = Math.min(8, rate)
+      } else {
+        // Backward: no reverse audio, but move position back.
+        // Update frozen position without restarting the source node.
+        engine.playbackRate = 0
+        engine.setFrozenPosition(engine.position + deltaSeconds)
+      }
       setPosition(deckId, engine.position)
     } else {
       // Not playing — seek-only, no audio
