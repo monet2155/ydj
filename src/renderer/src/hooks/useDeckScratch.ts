@@ -36,19 +36,16 @@ export function useDeckScratch(deckId: DeckId): ScratchHandlers {
     if (wasPlayingRef.current) {
       const rate = timeDeltaSec > 0 ? deltaSeconds / timeDeltaSec : 0
       if (rate >= 0) {
-        // Forward: pitch-shifted scratch sound
-        engine.playbackRate = Math.min(8, rate)
+        // Forward: setDirection handles the reverse→forward switch if needed,
+        // or just updates the rate when already forward.
+        engine.setDirection(false, Math.min(8, rate))
         setPosition(deckId, engine.position)
       } else {
-        // Backward: seek source node to new position at rate=0 (silent).
-        // seek() restarts the source at the correct position so onScratchEnd
-        // can restore rate without audio jumping back to the pre-scratch offset.
-        const newPos = Math.max(0, Math.min(duration, engine.position + deltaSeconds))
-        if (Math.abs(deltaSeconds) > 0.001) {  // skip sub-1ms nudges
-          engine.playbackRate = 0
-          engine.seek(newPos)
-          setPosition(deckId, newPos)
-        }
+        // Backward: switch to reverse buffer playback with the absolute rate.
+        // setDirection handles the forward→reverse switch (with crossfade) or
+        // just updates rate when already in reverse.
+        engine.setDirection(true, Math.min(8, Math.abs(rate)))
+        setPosition(deckId, engine.position)
       }
     } else {
       // Not playing — seek-only, no audio
@@ -64,7 +61,12 @@ export function useDeckScratch(deckId: DeckId): ScratchHandlers {
       // Use store's playbackRate as the authoritative restore target — it reflects
       // any pitch/sync changes made after onScratchStart (savedRef would be stale).
       const restoreRate = useDeckStore.getState().decks[deckId].playbackRate
-      engine.playbackRate = restoreRate
+      // If we ended in reverse, switch back to forward playback
+      if (engine.isReverse) {
+        engine.setDirection(false, restoreRate)
+      } else {
+        engine.playbackRate = restoreRate
+      }
       setPlaying(deckId, true)
     } else {
       setPlaying(deckId, false)

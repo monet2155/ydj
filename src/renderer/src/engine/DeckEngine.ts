@@ -14,11 +14,14 @@ export class DeckEngine {
   private eqMidNode: BiquadFilterNode
   private eqHighNode: BiquadFilterNode
   private buffer: AudioBuffer | null = null
+  private reverseBuffer: AudioBuffer | null = null
 
   // Tracking playback position
   private startOffset = 0       // position when play() was called
   private startTime = 0         // ctx.currentTime when play() was called
   private _isPlaying = false
+  private _isReverse = false
+  private _directionSwitching = false
   private _playbackRate = 1
   private _volume = 1
   private _onEnded: (() => void) | null = null
@@ -65,9 +68,16 @@ export class DeckEngine {
     return this.buffer?.duration ?? 0
   }
 
+  get isReverse(): boolean {
+    return this._isReverse
+  }
+
   get position(): number {
     if (!this._isPlaying) return this.startOffset
     const elapsed = (this.ctx.currentTime - this.startTime) * this._playbackRate
+    if (this._isReverse) {
+      return Math.max(0, this.startOffset - elapsed)
+    }
     return Math.min(this.startOffset + elapsed, this.duration)
   }
 
@@ -184,17 +194,44 @@ export class DeckEngine {
   load(buffer: AudioBuffer): void {
     this.stop()
     this.buffer = buffer
+    this._isReverse = false
     this.startOffset = 0
+    this.reverseBuffer = DeckEngine.createReverseBuffer(buffer)
+  }
+
+  /** Create a reversed copy of an AudioBuffer (channel data reversed in time). */
+  private static createReverseBuffer(buffer: AudioBuffer): AudioBuffer {
+    const reversed = new AudioBuffer({
+      numberOfChannels: buffer.numberOfChannels,
+      length: buffer.length,
+      sampleRate: buffer.sampleRate
+    })
+    for (let c = 0; c < buffer.numberOfChannels; c++) {
+      const src = buffer.getChannelData(c)
+      const dst = reversed.getChannelData(c)
+      for (let i = 0; i < src.length; i++) {
+        dst[i] = src[src.length - 1 - i]
+      }
+    }
+    return reversed
   }
 
   play(): void {
     if (!this.buffer || this._isPlaying) return
 
     const source = this.ctx.createBufferSource()
-    source.buffer = this.buffer
+    if (this._isReverse && this.reverseBuffer) {
+      // Play reverseBuffer from the mirrored position so audio travels backward.
+      // reverseBuffer[0] corresponds to forward position duration, so:
+      //   reverseBuffer offset = duration - startOffset
+      source.buffer = this.reverseBuffer
+      source.start(0, this.duration - this.startOffset)
+    } else {
+      source.buffer = this.buffer
+      source.start(0, this.startOffset)
+    }
     source.playbackRate.value = this._playbackRate
     source.connect(this.eqLowNode)
-    source.start(0, this.startOffset)
     this.source = source
 
     this.startTime = this.ctx.currentTime
@@ -210,6 +247,45 @@ export class DeckEngine {
         this._onEnded?.()
       }
     }
+  }
+
+  /**
+   * Switch playback direction with a brief gain crossfade to suppress click noise.
+   * If direction is unchanged, only the rate is updated.
+   */
+  setDirection(reverse: boolean, rate: number): void {
+    if (this._isReverse === reverse || this._directionSwitching) {
+      // Same direction or switch already in progress — just update rate
+      this.playbackRate = rate
+      return
+    }
+
+    if (!this._isPlaying) {
+      this._isReverse = reverse
+      this._playbackRate = rate
+      return
+    }
+
+    const currentPos = this.position
+    const t = this.ctx.currentTime
+
+    // Fade to silence, swap buffer, fade back in (≈15ms total)
+    this._directionSwitching = true
+    this.gainNode.gain.cancelScheduledValues(t)
+    this.gainNode.gain.setTargetAtTime(0, t, 0.004)
+
+    setTimeout(() => {
+      this._isReverse = reverse
+      this._playbackRate = rate
+      this.startOffset = currentPos
+      this._stop()
+      this._isPlaying = false
+      this.play()
+      this._directionSwitching = false
+      const t2 = this.ctx.currentTime
+      this.gainNode.gain.cancelScheduledValues(t2)
+      this.gainNode.gain.setTargetAtTime(this._volume, t2, 0.004)
+    }, 15)
   }
 
   pause(): void {
@@ -229,6 +305,7 @@ export class DeckEngine {
     const wasPlaying = this._isPlaying
     if (wasPlaying) this._stop()
     this.startOffset = Math.max(0, Math.min(seconds, this.duration))
+    this._isReverse = false
     this._isPlaying = false
     if (wasPlaying) this.play()
   }
