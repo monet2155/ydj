@@ -179,12 +179,6 @@ export class DeckEngine {
     return this.gainNode
   }
 
-  /** Update tracked position while source is frozen at rate=0. Does not restart source. */
-  setFrozenPosition(pos: number): void {
-    this.startOffset = Math.max(0, Math.min(pos, this.duration))
-    this.startTime = this.ctx.currentTime
-  }
-
   // ── Transport ──────────────────────────────────────────────────────────────
 
   load(buffer: AudioBuffer): void {
