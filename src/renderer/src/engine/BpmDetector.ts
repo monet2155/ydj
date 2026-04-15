@@ -7,7 +7,7 @@
  * 3. Onset strength = positive half-wave rectified first difference of energy
  * 4. Autocorrelation of onset strength in the 60–200 BPM lag range
  * 5. Parabolic interpolation for sub-frame precision
- * 6. Octave correction (halve if >160, double if <80)
+ * 6. Octave correction (halve if >160, double if <100)
  *
  * Works far better than peak-interval histogram on real music because
  * autocorrelation finds the *repeating pattern* rather than individual loud peaks.
@@ -77,7 +77,24 @@ export function detectBpmFromPeaks(samples: Float32Array, sampleRate: number): n
   }
   if (bestScore <= 0) return 0
 
-  // ── 5. Parabolic interpolation for sub-frame precision ────────────────────
+  // ── 5a. Sub-harmonic check ─────────────────────────────────────────────────
+  //   If the algorithm landed on 2T (double period), the half-lag (T) should
+  //   also show significant ACF energy.  After switching, we search ±2 frames
+  //   around the nominal halfLag to find the true local ACF peak — rounding
+  //   round(2T/2) can be 1 frame off from the true T, which causes the
+  //   parabolic interpolation to diverge in the wrong direction.
+  const halfLag = Math.round(bestLag / 2)
+  if (halfLag >= minLag && acf[halfLag] >= bestScore * 0.3) {
+    let newBest = halfLag
+    for (let d = -2; d <= 2; d++) {
+      const l = halfLag + d
+      if (l >= minLag && l <= maxLag && acf[l] > acf[newBest]) newBest = l
+    }
+    bestLag = newBest
+    bestScore = acf[newBest]
+  }
+
+  // ── 5b. Parabolic interpolation for sub-frame precision ───────────────────
   let refinedLag = bestLag
   if (bestLag > minLag && bestLag < maxLag) {
     const y0 = acf[bestLag - 1], y1 = acf[bestLag], y2 = acf[bestLag + 1]
@@ -89,10 +106,18 @@ export function detectBpmFromPeaks(samples: Float32Array, sampleRate: number): n
   let bpm = 60 / beatPeriodSec
 
   // ── 6. Octave correction ───────────────────────────────────────────────────
-  //   Autocorrelation can lock onto half or double the true beat period.
-  //   Snap to the musically sensible range with a single halve or double.
-  if (bpm < 80 && bpm * 2 <= MAX_BPM) bpm *= 2
-  else if (bpm > 160 && bpm / 2 >= MIN_BPM) bpm /= 2
+  //   Autocorrelation can lock onto double the true beat period (2T → half BPM).
+  //   Step 1: halve anything above 160 (potential double-period false detection).
+  //   Step 2: re-double if result is still too slow.
+  //   Using a flag so the re-double threshold is slightly wider (105 vs 80)
+  //   to catch the 200 BPM boundary case: 200 ÷ 2 = 100.25, which is just
+  //   above 100 and would otherwise miss the re-double.
+  let halved = false
+  if (bpm > 160 && bpm / 2 >= MIN_BPM) { bpm /= 2; halved = true }
+  // When halved=true (e.g. 200 BPM → ÷2 → 100.25), use 105 so the
+  // boundary case (100.25 > 100) still gets doubled back.
+  // When halved=false, keep original 100 threshold.
+  if (bpm < (halved ? 105 : 100) && bpm * 2 <= MAX_BPM) bpm *= 2
 
   return Math.max(MIN_BPM, Math.min(MAX_BPM, bpm))
 }
