@@ -1,6 +1,8 @@
 import { useDeckStore, type DeckId } from '../store/deckStore'
 import { useMixerStore } from '../store/mixerStore'
+import { useFxStore } from '../store/fxStore'
 import { getAudioEngine, getDeckEngine, getMixerEngine } from '../hooks/useAudio'
+import type { FilterMode } from '../engine/FxEngine'
 
 // ─── Transport ───────────────────────────────────────────────
 
@@ -109,10 +111,29 @@ export function setEqBand(deckId: DeckId, band: 'low' | 'high', value: number): 
   useDeckStore.getState().setEq(deckId, band, db)
 }
 
-export function setFilter(deckId: DeckId, _value: number): void {
-  // Filter 노브: 좌=LPF, 우=HPF, 중앙=off
-  // FX 체인의 Filter effect로 매핑되어야 하나 4단계 (a)에선 미연결 (FxEngine 인터페이스 확인 후 (b)에서)
-  void deckId; void _value
+/**
+ * Pure: Filter knob (norm 0..1) → fxStore filter patch.
+ * 중앙(0.5)=off / 좌측 절반=LPF / 우측 절반=HPF.
+ * FxEngine의 param 의미: 1=neutral, 0=full filter. center에서 param=1, 끝에서 param=0.
+ */
+const FILTER_DEADZONE = 0.04
+
+export function computeFilterFromKnob(norm: number): {
+  enabled: boolean
+  mode: FilterMode
+  param: number
+  wet: number
+} {
+  const distance = Math.abs(norm - 0.5) * 2  // 0 at center, 1 at extremes
+  if (distance < FILTER_DEADZONE) {
+    return { enabled: false, mode: 'lpf', param: 1, wet: 1 }
+  }
+  const mode: FilterMode = norm < 0.5 ? 'lpf' : 'hpf'
+  return { enabled: true, mode, param: 1 - distance, wet: 1 }
+}
+
+export function setFilter(deckId: DeckId, value: number): void {
+  useFxStore.getState().setFilter(deckId, computeFilterFromKnob(value))
 }
 
 export function setCrossfader(value: number): void {
