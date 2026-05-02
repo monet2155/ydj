@@ -1,5 +1,5 @@
-import { getDeckEngine } from '../../hooks/useAudio.js'
 import { useDeckStore, type DeckId } from '../../store/deckStore.js'
+import { syncDeck } from '../../midi/actions.js'
 
 interface SyncButtonProps {
   deckId: DeckId
@@ -11,21 +11,10 @@ export default function SyncButton({ deckId }: SyncButtonProps): JSX.Element {
 
   const thisDeck = useDeckStore((s) => s.decks[deckId])
   const masterDeck = useDeckStore((s) => s.decks[masterId])
-  const { setPlaybackRate } = useDeckStore()
 
   const canSync = !!(thisDeck.bpm && masterDeck.bpm)
 
-  const handleSync = (): void => {
-    if (!thisDeck.bpm || !masterDeck.bpm) return
-
-    // Master's current effective BPM
-    const masterEffectiveBpm = masterDeck.bpm * masterDeck.playbackRate
-    // Required playbackRate to match
-    const newRate = masterEffectiveBpm / thisDeck.bpm
-
-    getDeckEngine(deckId).playbackRate = newRate
-    setPlaybackRate(deckId, newRate)
-  }
+  const handleSync = (): void => syncDeck(deckId)
 
   return (
     <button

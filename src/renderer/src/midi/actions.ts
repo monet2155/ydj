@@ -28,9 +28,23 @@ export function cueDeck(deckId: DeckId): void {
   useDeckStore.getState().setPlaying(deckId, false)
 }
 
-export function syncDeck(_deckId: DeckId): void {
-  // SyncButton 컴포넌트에 이미 구현됨. 추후 그 로직을 추출해 여기서 호출.
-  // 4단계 (a)에선 placeholder.
+/** Pure: master의 effective BPM에 맞추기 위한 deckId의 새 playbackRate */
+export function computeSyncRate(
+  thisBpm: number | null,
+  masterBpm: number | null,
+  masterRate: number
+): number | null {
+  if (!thisBpm || !masterBpm) return null
+  return (masterBpm * masterRate) / thisBpm
+}
+
+export function syncDeck(deckId: DeckId): void {
+  const masterId: DeckId = deckId === 'A' ? 'B' : 'A'
+  const decks = useDeckStore.getState().decks
+  const rate = computeSyncRate(decks[deckId].bpm, decks[masterId].bpm, decks[masterId].playbackRate)
+  if (rate === null) return
+  getDeckEngine(deckId).playbackRate = rate
+  useDeckStore.getState().setPlaybackRate(deckId, rate)
 }
 
 // ─── Hot Cue ─────────────────────────────────────────────────
