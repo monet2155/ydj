@@ -231,8 +231,8 @@ export function loadSelectedToDeck(deckId: DeckId): void {
 //   - 첫 tick: scratch 세션 진입 (재생 중이면 playbackRate=0으로 freeze)
 //   - 매 tick: deltaSec/timeDeltaSec → rate, 또는 seek
 //   - idle 150ms: 세션 종료 (rate 복원, 재생 재개)
-const JOG_TICK_SEC = 0.03    // tick당 오디오 위치 변화량 — UI 잡 드래그와 비슷한 체감
-const JOG_IDLE_MS = 150
+const JOG_TICK_SEC = 0.012   // tick당 오디오 위치 변화량 (Party Mix MKII는 detent당 메시지가 많아 작게)
+const JOG_IDLE_MS = 250      // 손 떼고 음원 재개까지 ms — Serato 식 freeze 체감 위해 길게
 const JOG_MAX_RATE = 8
 
 interface JogSession {

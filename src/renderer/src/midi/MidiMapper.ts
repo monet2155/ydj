@@ -76,9 +76,19 @@ export class MidiMapper {
         return
       }
       case 'relative-signed': {
-        // Party Mix MKII: d2=0x01 → +1, d2=0x7f → -1
-        const dir = d2 === 0x01 ? 1 : d2 === 0x7f ? -1 : 0
-        if (dir !== 0) this.dispatchRelative(action, dir as 1 | -1)
+        // Party Mix MKII jog/browse는 sign-magnitude:
+        //   1~63 = +N, 64~127 = -(128-N).
+        // 한 detent에서 여러 step을 보낼 수 있어 magnitude를 그대로 사용.
+        let signedSteps = 0
+        if (d2 === 0) signedSteps = 0
+        else if (d2 < 64) signedSteps = d2
+        else signedSteps = d2 - 128  // e.g. 127 → -1, 120 → -8
+        if (signedSteps === 0) return
+        const dir = signedSteps > 0 ? 1 : -1
+        const count = Math.min(8, Math.abs(signedSteps))
+        for (let i = 0; i < count; i++) {
+          this.dispatchRelative(action, dir as 1 | -1)
+        }
         return
       }
       case 'mode-echo': {
