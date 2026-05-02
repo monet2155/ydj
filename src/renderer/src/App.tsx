@@ -10,6 +10,8 @@ import { useDeckScratch } from './hooks/useDeckScratch'
 import { useQueueStore } from './store/queueStore'
 import { getDeckEngine } from './hooks/useAudio'
 import type { ScratchHandlers } from './hooks/useDeckScratch'
+import { midiManager } from './midi/MidiManager'
+import MidiStatus from './components/Midi/MidiStatus'
 
 interface DeckDiskProps {
   deckId: DeckId
@@ -39,6 +41,8 @@ export default function App(): JSX.Element {
   const scratchB = useDeckScratch('B')
 
   useEffect(() => { fetchTracks() }, [fetchTracks])
+
+  useEffect(() => { void midiManager.init() }, [])
 
   const handleLibraryLoad = (
     filePath: string,
@@ -123,6 +127,9 @@ export default function App(): JSX.Element {
         <span className="text-xs font-black tracking-[0.3em] text-slate-400">
           YDJ
         </span>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <MidiStatus />
+        </div>
       </header>
 
       {/* Waveforms */}

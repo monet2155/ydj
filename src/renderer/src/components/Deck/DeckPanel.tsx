@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, forwardRef } from 'react'
 import { useDeckStore, type DeckId } from '../../store/deckStore.js'
 import { getAudioEngine, getDeckEngine, useDeckPosition } from '../../hooks/useAudio.js'
+import { togglePlay } from '../../midi/actions.js'
 import { setDeckBuffer } from '../../store/audioBufferStore.js'
 import { useLibraryStore } from '../../store/libraryStore.js'
 import PitchControl from './PitchControl.js'
@@ -75,13 +76,7 @@ const DeckPanel = forwardRef<DeckPanelHandle, DeckPanelProps>(function DeckPanel
   useImperativeHandle(ref, () => ({ loadFromPath }), [loadFromPath])
 
   const handlePlayPause = async (): Promise<void> => {
-    await getAudioEngine().resume()
-    const engine = getDeckEngine(deckId)
-    if (deck.isPlaying) {
-      engine.pause(); setPlaying(deckId, false)
-    } else {
-      engine.play(); setPlaying(deckId, true)
-    }
+    await togglePlay(deckId)
   }
 
   const handleCue = (): void => {
