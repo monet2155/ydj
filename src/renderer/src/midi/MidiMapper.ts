@@ -1,5 +1,6 @@
 import type { ActionKey, MidiBinding, Preset, PadMode } from './types'
 import { useMidiStore } from '../store/midiStore'
+import { useMixerStore } from '../store/mixerStore'
 import {
   togglePlay,
   cueDeck,
@@ -20,7 +21,6 @@ import {
   browsePress,
   jogTouchStart,
   jogTouchEnd,
-  toggleCue,
   setCueGain
 } from './actions'
 import type { DeckId } from '../store/deckStore'
@@ -39,7 +39,7 @@ function buildIndex(preset: Preset): Index {
     const entry = { action: k as ActionKey, binding: b }
     map.set(indexKey(b.type, b.channel, b.data1), entry)
     // jog-touch: NoteOn(터치 다운)과 NoteOff(터치 업) 둘 다 같은 액션으로 라우트
-    if (b.value.kind === 'jog-touch' && b.type === 0x90) {
+    if ((b.value.kind === 'jog-touch' || b.value.kind === 'cue-toggle') && b.type === 0x90) {
       map.set(indexKey(0x80, b.channel, b.data1), entry)
     }
   }
@@ -126,6 +126,11 @@ export class MidiMapper {
         else jogTouchEnd(binding.value.deck)
         return
       }
+      case 'cue-toggle': {
+        const on = type === 0x90 && d2 > 0
+        useMixerStore.getState().setCueEnabled(binding.value.deck, on)
+        return
+      }
     }
   }
 
@@ -148,9 +153,7 @@ export class MidiMapper {
       return
     }
 
-    // PFL/Cue Monitor — 덱별 헤드폰 모니터 토글
-    if (action === 'deck.A.cueMonitor') return toggleCue('A')
-    if (action === 'deck.B.cueMonitor') return toggleCue('B')
+    // PFL/Cue Monitor는 'cue-toggle' kind로 처리되므로 dispatchTrigger까지 오지 않음.
 
     // Load — 현재 선택된 라이브러리 트랙을 그 덱에 로드
     if (action === 'deck.A.load') return loadSelectedToDeck('A')

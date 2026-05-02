@@ -64,8 +64,10 @@ export const partyMix2Preset: Preset = {
     'deck.B.filter':  { type: 0xb0, channel: 1, data1: 0x1a, value: { kind: 'absolute' } },
 
     // ─── PFL ─────────────────────────────────────────────
-    'deck.A.cueMonitor': { type: 0x90, channel: 0, data1: 0x1b, value: { kind: 'momentary' } },
-    'deck.B.cueMonitor': { type: 0x90, channel: 1, data1: 0x1b, value: { kind: 'momentary' } },
+    // 컨트롤러가 LED 상태를 들고 있고, NoteOn=ON / NoteOff=OFF로 absolute하게 보냄.
+    // 다른 덱을 켜면 이 덱에 NoteOff가 echo로 도착 → 자동으로 mutual-exclusive PFL.
+    'deck.A.cueMonitor': { type: 0x90, channel: 0, data1: 0x1b, value: { kind: 'cue-toggle', deck: 'A' } },
+    'deck.B.cueMonitor': { type: 0x90, channel: 1, data1: 0x1b, value: { kind: 'cue-toggle', deck: 'B' } },
 
     // ─── Browse ──────────────────────────────────────────
     'browse.turn':  { type: 0xb0, channel: 15, data1: 0x00, value: { kind: 'relative-signed' } },

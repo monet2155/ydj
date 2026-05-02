@@ -33,6 +33,7 @@ export interface MidiBinding {
     | { kind: 'relative-signed' }                              // CC d2: 1..63=+N, 65..127=-(128-N)
     | { kind: 'mode-echo'; deck: 'A' | 'B'; mode: PadMode }    // 패드모드 echo
     | { kind: 'jog-touch'; deck: 'A' | 'B' }                   // NoteOn=down / NoteOff=up
+    | { kind: 'cue-toggle'; deck: 'A' | 'B' }                  // NoteOn=cue on / NoteOff=cue off (controller-driven)
 }
 
 export type ActionKey =
