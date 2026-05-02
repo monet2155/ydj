@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, clipboard } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 export type DeckId = 'A' | 'B'
@@ -47,6 +47,9 @@ export interface ElectronAPI {
     load: (videoId: string) => Promise<(number | null)[]>
     save: (videoId: string, slots: (number | null)[]) => Promise<void>
   }
+  clipboard: {
+    writeText: (text: string) => void
+  }
 }
 
 const api: ElectronAPI = {
@@ -70,6 +73,9 @@ const api: ElectronAPI = {
   hotcues: {
     load: (videoId) => ipcRenderer.invoke('hotcues:load', videoId),
     save: (videoId, slots) => ipcRenderer.invoke('hotcues:save', videoId, slots)
+  },
+  clipboard: {
+    writeText: (text) => clipboard.writeText(text)
   }
 }
 

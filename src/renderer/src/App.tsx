@@ -12,6 +12,7 @@ import { getDeckEngine } from './hooks/useAudio'
 import type { ScratchHandlers } from './hooks/useDeckScratch'
 import { midiManager } from './midi/MidiManager'
 import MidiStatus from './components/Midi/MidiStatus'
+import MidiLearnPanel from './components/Midi/MidiLearnPanel'
 
 interface DeckDiskProps {
   deckId: DeckId
@@ -43,6 +44,8 @@ export default function App(): JSX.Element {
   useEffect(() => { fetchTracks() }, [fetchTracks])
 
   useEffect(() => { void midiManager.init() }, [])
+
+  const [midiPanelOpen, setMidiPanelOpen] = useState(false)
 
   const handleLibraryLoad = (
     filePath: string,
@@ -128,9 +131,11 @@ export default function App(): JSX.Element {
           YDJ
         </span>
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-          <MidiStatus />
+          <MidiStatus onClick={() => setMidiPanelOpen(true)} />
         </div>
       </header>
+
+      {midiPanelOpen && <MidiLearnPanel onClose={() => setMidiPanelOpen(false)} />}
 
       {/* Waveforms */}
       <WaveformRow scratchA={scratchA} scratchB={scratchB} />

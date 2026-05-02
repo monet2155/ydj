@@ -1,6 +1,7 @@
 import { useMidiStore } from '../store/midiStore'
 import type { MidiDevice } from './types'
-import { togglePlay } from './actions'
+import { MidiMapper } from './MidiMapper'
+import { partyMix2Preset } from './presets/partyMix2'
 
 const STATUS_NAME: Record<number, string> = {
   0x80: 'NoteOff',
@@ -23,12 +24,21 @@ function formatMessage(deviceName: string, data: Uint8Array): string {
   return `[MIDI ${deviceName}] ${name} ch=${channel} d1=${d1} d2=${d2}  raw=${hex}`
 }
 
+export type MidiListener = (data: Uint8Array, deviceName: string) => void
+
 class MidiManager {
   private access: MIDIAccess | null = null
   private initialized = false
   private boundInputs = new Set<string>()
-  // 개발 중 raw 메시지 콘솔 덤프. 2단계 측정 끝나면 false로 바꾸거나 토글로 노출.
-  public debugLog = true
+  private listeners = new Set<MidiListener>()
+  public mapper = new MidiMapper(partyMix2Preset)
+  // 개발 중 raw 메시지 콘솔 덤프. 토글: window.midi.debugLog = false
+  public debugLog = false
+
+  subscribe(listener: MidiListener): () => void {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
 
   async init(): Promise<void> {
     if (this.initialized) return
@@ -75,6 +85,7 @@ class MidiManager {
             // eslint-disable-next-line no-console
             console.log(formatMessage(deviceName, e.data))
           }
+          this.listeners.forEach((fn) => fn(e.data, deviceName))
           this.route(e.data)
         }
         this.boundInputs.add(input.id)
@@ -85,18 +96,8 @@ class MidiManager {
     useMidiStore.getState().setDevices(devices)
   }
 
-  // 3단계: 하드코딩 라우터. 4단계에서 MidiMapper로 교체.
-  // Party Mix MKII: Play A = NoteOn ch=0 d1=0x00 (velocity 127)
   private route(data: Uint8Array): void {
-    const status = data[0] ?? 0
-    const type = status & 0xf0
-    const channel = status & 0x0f
-    const d1 = data[1] ?? 0
-    const d2 = data[2] ?? 0
-
-    if (type === 0x90 && d2 > 0 && channel === 0 && d1 === 0x00) {
-      void togglePlay('A')
-    }
+    this.mapper.handle(data)
   }
 }
 
