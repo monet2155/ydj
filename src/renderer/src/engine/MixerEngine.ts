@@ -36,6 +36,7 @@ export class MixerEngine {
   private cueBus: GainNode
   private cueGainNode: GainNode
   private cueOutDest: MediaStreamAudioDestinationNode
+  private cueAudioElement: HTMLAudioElement | null = null
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx
@@ -117,5 +118,32 @@ export class MixerEngine {
   /** MediaStream that should be played through the headphone output device. */
   get cueStream(): MediaStream {
     return this.cueOutDest.stream
+  }
+
+  /** Bind/replace the hidden <audio> element used to drive the headphone output.
+   *  Called once on app mount. */
+  attachCueAudioElement(el: HTMLAudioElement): void {
+    this.cueAudioElement = el
+    el.srcObject = this.cueOutDest.stream
+    void el.play().catch(() => { /* autoplay policy — will resume after a user gesture */ })
+  }
+
+  /** Set the headphone output device. Pass 'default' for system default. */
+  async setHeadphoneSinkId(deviceId: string): Promise<void> {
+    if (!this.cueAudioElement) return
+    const el = this.cueAudioElement as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }
+    if (typeof el.setSinkId !== 'function') return
+    try {
+      await el.setSinkId(deviceId === 'default' ? '' : deviceId)
+    } catch { /* invalid device id — caller should fall back */ }
+  }
+
+  /** Set the master output device via AudioContext.setSinkId (Chromium 110+). */
+  async setMasterSinkId(deviceId: string): Promise<void> {
+    const ctx = this.ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> }
+    if (typeof ctx.setSinkId !== 'function') return
+    try {
+      await ctx.setSinkId(deviceId === 'default' ? '' : deviceId)
+    } catch { /* invalid device id — caller should fall back */ }
   }
 }

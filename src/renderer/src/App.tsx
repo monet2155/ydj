@@ -8,12 +8,15 @@ import { useLibraryStore } from './store/libraryStore'
 import { useDeckStore, type DeckId } from './store/deckStore'
 import { useDeckScratch } from './hooks/useDeckScratch'
 import { useQueueStore } from './store/queueStore'
-import { getDeckEngine } from './hooks/useAudio'
+import { getDeckEngine, getMixerEngine } from './hooks/useAudio'
 import type { ScratchHandlers } from './hooks/useDeckScratch'
 import { midiManager } from './midi/MidiManager'
 import { registerLibraryLoadCallback, registerBrowsePressCallback } from './midi/actions'
 import MidiStatus from './components/Midi/MidiStatus'
 import MidiLearnPanel from './components/Midi/MidiLearnPanel'
+import { useOutputDeviceStore } from './store/outputDeviceStore'
+import AudioSettings from './components/Settings/AudioSettings'
+import SettingsButton from './components/Settings/SettingsButton'
 
 interface DeckDiskProps {
   deckId: DeckId
@@ -45,6 +48,23 @@ export default function App(): JSX.Element {
   useEffect(() => { fetchTracks() }, [fetchTracks])
 
   useEffect(() => { void midiManager.init() }, [])
+
+  const [midiPanelOpen, setMidiPanelOpen] = useState(false)
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false)
+  const cueAudioRef = useRef<HTMLAudioElement>(null)
+  const masterDeviceId = useOutputDeviceStore((s) => s.masterDeviceId)
+  const headphoneDeviceId = useOutputDeviceStore((s) => s.headphoneDeviceId)
+  const refreshOutputDevices = useOutputDeviceStore((s) => s.refreshDevices)
+
+  useEffect(() => {
+    if (cueAudioRef.current) {
+      getMixerEngine().attachCueAudioElement(cueAudioRef.current)
+    }
+    void refreshOutputDevices()
+  }, [refreshOutputDevices])
+
+  useEffect(() => { void getMixerEngine().setMasterSinkId(masterDeviceId) }, [masterDeviceId])
+  useEffect(() => { void getMixerEngine().setHeadphoneSinkId(headphoneDeviceId) }, [headphoneDeviceId])
 
   useEffect(() => {
     registerLibraryLoadCallback(handleLibraryLoad)
@@ -141,12 +161,17 @@ export default function App(): JSX.Element {
         <span className="text-xs font-black tracking-[0.3em] text-slate-400">
           YDJ
         </span>
-        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
           <MidiStatus onClick={() => setMidiPanelOpen(true)} />
+          <SettingsButton onClick={() => setAudioSettingsOpen(true)} />
         </div>
       </header>
 
       {midiPanelOpen && <MidiLearnPanel onClose={() => setMidiPanelOpen(false)} />}
+      {audioSettingsOpen && <AudioSettings onClose={() => setAudioSettingsOpen(false)} />}
+
+      {/* Hidden audio sink for the cue (PFL) bus */}
+      <audio ref={cueAudioRef} style={{ display: 'none' }} />
 
       {/* Waveforms */}
       <WaveformRow scratchA={scratchA} scratchB={scratchB} />
