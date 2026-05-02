@@ -79,13 +79,20 @@ export function triggerHotCue(deckId: DeckId, slot: number): void {
 
 // ─── Auto Loop ───────────────────────────────────────────────
 
+/** Pure: 가장 가까운 beat에 스냅한 시작 위치. 트랙 시작=beat 0 가정. */
+export function snapToBeat(positionSec: number, secondsPerBeat: number): number {
+  const nearestBeat = Math.max(0, Math.round(positionSec / secondsPerBeat))
+  return nearestBeat * secondsPerBeat
+}
+
 export function setAutoLoop(deckId: DeckId, beats: number): void {
   const deck = useDeckStore.getState().decks[deckId]
   if (!deck.track || !deck.bpm) return
-  const secondsPerBeat = 60 / (deck.bpm * deck.playbackRate)
+  // 소스 시간 기준 (position과 같은 단위). playbackRate는 길이에 영향 없음.
+  const secondsPerBeat = 60 / deck.bpm
   const length = secondsPerBeat * beats
 
-  // 활성 루프와 같은 길이(=같은 beat 수) 패드를 다시 누르면 해제. 다른 길이면 새 루프.
+  // 활성 루프와 같은 길이(=같은 beat 수) 패드를 다시 누르면 해제.
   if (deck.loop.active && deck.loop.start !== null && deck.loop.end !== null) {
     const activeLength = deck.loop.end - deck.loop.start
     if (Math.abs(activeLength - length) < 0.001) {
@@ -94,7 +101,9 @@ export function setAutoLoop(deckId: DeckId, beats: number): void {
       return
     }
   }
-  const start = deck.position
+
+  // 시작 위치를 가장 가까운 beat 그리드에 스냅 (Serato식 quantize)
+  const start = snapToBeat(deck.position, secondsPerBeat)
   const end = start + length
   getDeckEngine(deckId).activateLoop(start, end)
   useDeckStore.getState().setLoop(deckId, { active: true, start, end })

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSyncRate, computeFilterFromKnob, nextFxTimeDivision } from '../midi/actions'
+import { computeSyncRate, computeFilterFromKnob, nextFxTimeDivision, snapToBeat } from '../midi/actions'
 
 describe('computeSyncRate', () => {
   it('matches master effective BPM (master at 120, this at 100, rate 1) → 1.2', () => {
@@ -58,5 +58,32 @@ describe('nextFxTimeDivision', () => {
 
   it('falls back to 1/8 (next from 1/16) when current is unknown', () => {
     expect(nextFxTimeDivision(0.123456)).toBe(1 / 8)
+  })
+})
+
+describe('snapToBeat', () => {
+  // 120 BPM → 0.5 sec per beat
+  const spb = 0.5
+
+  it('snaps onto a beat that is right on the grid', () => {
+    expect(snapToBeat(2.0, spb)).toBeCloseTo(2.0, 5)
+  })
+
+  it('rounds down when slightly past a beat', () => {
+    expect(snapToBeat(2.1, spb)).toBeCloseTo(2.0, 5)
+  })
+
+  it('rounds up when more than half-way to the next beat', () => {
+    expect(snapToBeat(2.3, spb)).toBeCloseTo(2.5, 5)
+  })
+
+  it('clamps to 0 when before track start', () => {
+    expect(snapToBeat(-0.1, spb)).toBe(0)
+  })
+
+  it('snaps with a different BPM (140 BPM ≈ 0.4286 spb)', () => {
+    const spb140 = 60 / 140
+    // beat 3 ≈ 1.286
+    expect(snapToBeat(1.3, spb140)).toBeCloseTo(spb140 * 3, 4)
   })
 })
