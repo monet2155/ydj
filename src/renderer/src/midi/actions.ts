@@ -224,7 +224,7 @@ export function loadSelectedToDeck(deckId: DeckId): void {
   }, deckId)
 }
 
-// ─── Jog: Serato-style touch-to-freeze + scratch / pitch-bend ──
+// ─── Jog: CDJ-style touch-to-pause + seek / pitch-bend ─────────
 //
 // Party Mix MKII가 보내는 메시지:
 //   NoteOn  ch=N d1=6 = 잡 위 터치 다운
@@ -232,87 +232,52 @@ export function loadSelectedToDeck(deckId: DeckId): void {
 //   CC      ch=N d1=6 = 회전 tick (sign-magnitude d2)
 //
 // 동작:
-//   터치 다운        → scratch 세션 시작. 재생 중이면 즉시 rate=0 (음악 정지).
-//   터치 중 회전     → scratch. 마지막 tick 후 ~80ms 무동작이면 rate=0으로 복귀(그 자리에 멈춤).
-//   터치 업          → 세션을 곧장 끝내지 않고 "released" 표시. 회전이 계속되면 scratch 유지.
-//   터치 업 + 무동작 → ~400ms 뒤 세션 종료, 원래 rate/play 복원.
-//   터치 다시 다운   → "released" 해제, 다시 freeze.
-//   터치 없이 회전   → 가벼운 pitch bend.
+//   터치 다운        → 음악 정지(rate=0). 회전해도 무음, 위치만 이동.
+//   터치 중 회전     → seek (각 tick = 위치 점프, 무음).
+//   터치 업          → 즉시 음악 재개 (현재 위치, 원래 rate). 딜레이 없음.
+//   터치 업 후 잔여 회전 → 음악 재생 중 seek로 위치 점프 (jog 모멘텀 흡수).
+//   회전 멈춤 (idle) → 세션 종료, 일반 재생으로 전환.
+//   터치 X + 회전    → ±4% pitch bend (외부 링).
 const JOG_TICK_SEC = 0.03
-const JOG_FREEZE_AFTER_MS = 80    // 터치 중 무동작 → rate=0
-const JOG_END_AFTER_MS = 400      // 터치 떼고 회전도 멈춘 뒤 → 세션 종료
-const JOG_MAX_RATE = 8
+const JOG_RESIDUAL_IDLE_MS = 200  // 터치 떼고 회전도 멈춘 뒤 → 세션 종료
 const PITCH_BEND_AMOUNT = 0.04
 const PITCH_BEND_DECAY_MS = 120
 
 interface JogSession {
   wasPlaying: boolean
   released: boolean
-  lastTickTime: number
-  freezeTimer: ReturnType<typeof setTimeout> | null  // 터치 중 무동작 → rate=0
-  endTimer: ReturnType<typeof setTimeout> | null    // 떼고 무동작 → 세션 종료
+  endTimer: ReturnType<typeof setTimeout> | null
 }
 
 const jogSessions: Record<DeckId, JogSession | null> = { A: null, B: null }
 const bendTimers: Record<DeckId, ReturnType<typeof setTimeout> | null> = { A: null, B: null }
 const bendBaseline: Record<DeckId, number> = { A: 1, B: 1 }
 
-function clearJogTimers(s: JogSession): void {
-  if (s.freezeTimer) clearTimeout(s.freezeTimer)
-  if (s.endTimer) clearTimeout(s.endTimer)
-  s.freezeTimer = null
-  s.endTimer = null
-}
-
 function endJogSession(deckId: DeckId): void {
   const session = jogSessions[deckId]
   if (!session) return
-  clearJogTimers(session)
+  if (session.endTimer) clearTimeout(session.endTimer)
   jogSessions[deckId] = null
-
-  const engine = getDeckEngine(deckId)
-  if (session.wasPlaying) {
-    const restoreRate = useDeckStore.getState().decks[deckId].playbackRate
-    if (engine.isReverse) engine.setDirection(false, restoreRate)
-    else engine.playbackRate = restoreRate
-    if (!engine.isPlaying) engine.play()
-    useDeckStore.getState().setPlaying(deckId, true)
-  } else {
-    useDeckStore.getState().setPlaying(deckId, false)
-  }
-  useDeckStore.getState().setPosition(deckId, engine.position)
-}
-
-function scheduleFreezeAfterIdle(deckId: DeckId, session: JogSession): void {
-  if (session.freezeTimer) clearTimeout(session.freezeTimer)
-  session.freezeTimer = setTimeout(() => {
-    getDeckEngine(deckId).playbackRate = 0
-    session.freezeTimer = null
-  }, JOG_FREEZE_AFTER_MS)
+  // 오디오는 touchEnd 시점에 이미 복귀했음. 여기선 세션 상태만 정리.
 }
 
 function scheduleEndAfterIdle(deckId: DeckId, session: JogSession): void {
   if (session.endTimer) clearTimeout(session.endTimer)
-  session.endTimer = setTimeout(() => endJogSession(deckId), JOG_END_AFTER_MS)
+  session.endTimer = setTimeout(() => endJogSession(deckId), JOG_RESIDUAL_IDLE_MS)
 }
 
 export function jogTouchStart(deckId: DeckId): void {
+  const engine = getDeckEngine(deckId)
   const existing = jogSessions[deckId]
   if (existing) {
-    clearJogTimers(existing)
+    if (existing.endTimer) clearTimeout(existing.endTimer)
+    existing.endTimer = null
     existing.released = false
-    if (existing.wasPlaying) getDeckEngine(deckId).playbackRate = 0
+    if (existing.wasPlaying) engine.playbackRate = 0
     return
   }
-  const engine = getDeckEngine(deckId)
   const wasPlaying = engine.isPlaying
-  jogSessions[deckId] = {
-    wasPlaying,
-    released: false,
-    lastTickTime: performance.now(),
-    freezeTimer: null,
-    endTimer: null
-  }
+  jogSessions[deckId] = { wasPlaying, released: false, endTimer: null }
   if (wasPlaying) engine.playbackRate = 0
 }
 
@@ -320,6 +285,17 @@ export function jogTouchEnd(deckId: DeckId): void {
   const session = jogSessions[deckId]
   if (!session) return
   session.released = true
+
+  // 즉시 재생 복귀 — 딜레이 없음
+  const engine = getDeckEngine(deckId)
+  if (session.wasPlaying) {
+    const restoreRate = useDeckStore.getState().decks[deckId].playbackRate
+    engine.playbackRate = restoreRate
+    if (!engine.isPlaying) engine.play()
+    useDeckStore.getState().setPlaying(deckId, true)
+  }
+
+  // 잔여 회전 흡수용 짧은 idle. tick이 더 들어오면 reset.
   scheduleEndAfterIdle(deckId, session)
 }
 
@@ -345,23 +321,13 @@ export function jogStep(deckId: DeckId, direction: 1 | -1): void {
     return
   }
 
+  // Active session — 터치든 떼든 모두 seek (위치 점프). 오디오는 touch 상태가 결정.
   const engine = getDeckEngine(deckId)
-  const now = performance.now()
-  const timeDeltaSec = Math.max(0.001, (now - session.lastTickTime) / 1000)
-  session.lastTickTime = now
   const deltaSec = direction * JOG_TICK_SEC
+  const next = Math.max(0, Math.min(deck.track.duration, deck.position + deltaSec))
+  engine.seek(next)
+  useDeckStore.getState().setPosition(deckId, next)
 
-  if (session.wasPlaying) {
-    const rate = deltaSec / timeDeltaSec
-    if (rate >= 0) engine.setDirection(false, Math.min(JOG_MAX_RATE, rate))
-    else engine.setDirection(true, Math.min(JOG_MAX_RATE, Math.abs(rate)))
-    useDeckStore.getState().setPosition(deckId, engine.position)
-  } else {
-    const next = Math.max(0, Math.min(deck.track.duration, deck.position + deltaSec))
-    engine.seek(next)
-    useDeckStore.getState().setPosition(deckId, next)
-  }
-
-  scheduleFreezeAfterIdle(deckId, session)
+  // released 상태에서 추가 tick이 들어오면 종료 timer 연장
   if (session.released) scheduleEndAfterIdle(deckId, session)
 }
