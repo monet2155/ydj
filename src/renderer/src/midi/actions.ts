@@ -118,11 +118,30 @@ export function setDeckVolume(deckId: DeckId, value: number): void {
   useDeckStore.getState().setVolume(deckId, v)
 }
 
+// Party Mix MKII는 High/Low 노브의 최저점이 곧 kill 위치 (-∞).
+// 0 가까이 도달하면 kill 상태로 잠그고, 다시 올리면 해제.
+const EQ_KILL_THRESHOLD = 0.02
+
 export function setEqBand(deckId: DeckId, band: 'low' | 'high', value: number): void {
   // value: 0..1 (0 = -40dB cut, 0.5 = 0dB, 1 = +6dB)
+  const engine = getDeckEngine(deckId)
+  const store = useDeckStore.getState()
+  const wasKill = store.decks[deckId].eq[`${band}Kill`]
+
+  if (value <= EQ_KILL_THRESHOLD) {
+    if (!wasKill) {
+      engine.setEqKill(band, true)
+      store.setEqKill(deckId, band, true)
+    }
+    return
+  }
+
+  if (wasKill) {
+    store.setEqKill(deckId, band, false)
+  }
   const db = value <= 0.5 ? -40 + value * 80 : (value - 0.5) * 12
-  getDeckEngine(deckId).setEq(band, db)
-  useDeckStore.getState().setEq(deckId, band, db)
+  engine.setEq(band, db)
+  store.setEq(deckId, band, db)
 }
 
 /**
