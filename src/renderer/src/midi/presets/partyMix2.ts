@@ -49,7 +49,9 @@ export const partyMix2Preset: Preset = {
 
     // ─── Knobs ───────────────────────────────────────────
     'mixer.master':        { type: 0xb0, channel: 15, data1: 0x0a, value: { kind: 'absolute' } },
-    'mixer.headphone.mix': { type: 0xb0, channel: 15, data1: 0x0c, value: { kind: 'absolute' } },
+    // MKII #4 노브는 매뉴얼상 "Cue Gain"(헤드폰 출력 볼륨). 측정 시 임시로
+    // 'mixer.headphone.mix'로 잡았으나 실제 의미는 cue gain이라 rename.
+    'mixer.cueGain':       { type: 0xb0, channel: 15, data1: 0x0c, value: { kind: 'absolute' } },
     'deck.A.level':        { type: 0xb0, channel: 0,  data1: 0x17, value: { kind: 'absolute' } },
     'deck.B.level':        { type: 0xb0, channel: 1,  data1: 0x17, value: { kind: 'absolute' } },
 

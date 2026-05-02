@@ -54,7 +54,7 @@ export type ActionKey =
   | 'mixer.crossfader'
   | 'deck.A.pitch'  | 'deck.B.pitch'
   // Knobs
-  | 'mixer.master' | 'mixer.headphone.mix'
+  | 'mixer.master' | 'mixer.cueGain'
   | 'deck.A.level' | 'deck.B.level'
   // EQ + Filter
   | 'deck.A.eq.high' | 'deck.A.eq.low' | 'deck.A.filter'

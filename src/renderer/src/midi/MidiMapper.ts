@@ -19,7 +19,9 @@ import {
   cycleFxTimeDivision,
   browsePress,
   jogTouchStart,
-  jogTouchEnd
+  jogTouchEnd,
+  toggleCue,
+  setCueGain
 } from './actions'
 import type { DeckId } from '../store/deckStore'
 
@@ -132,8 +134,9 @@ export class MidiMapper {
       return
     }
 
-    // PFL/Cue Monitor — 헤드폰 모니터링이 엔진에 미구현. 별도 트랙(MIDI_PLAN).
-    if (action === 'deck.A.cueMonitor' || action === 'deck.B.cueMonitor') return
+    // PFL/Cue Monitor — 덱별 헤드폰 모니터 토글
+    if (action === 'deck.A.cueMonitor') return toggleCue('A')
+    if (action === 'deck.B.cueMonitor') return toggleCue('B')
 
     // Load — 현재 선택된 라이브러리 트랙을 그 덱에 로드
     if (action === 'deck.A.load') return loadSelectedToDeck('A')
@@ -171,10 +174,9 @@ export class MidiMapper {
     // Pitch fader: -10% ~ +10% (SPEC §3.5 기본 범위, 50%=center)
     if (action === 'deck.A.pitch') return setPitchPercent('A', (norm - 0.5) * 20)
     if (action === 'deck.B.pitch') return setPitchPercent('B', (norm - 0.5) * 20)
-    // Master / Headphone
+    // Master / Cue
     if (action === 'mixer.master') return setMasterVolume(norm)
-    // Headphone Mix — cue bus 미구현. 별도 트랙(MIDI_PLAN).
-    if (action === 'mixer.headphone.mix') return
+    if (action === 'mixer.cueGain') return setCueGain(norm)
     // Level — pre-fader trim 미구현. 별도 트랙(MIDI_PLAN).
     if (action === 'deck.A.level' || action === 'deck.B.level') return
     // EQ

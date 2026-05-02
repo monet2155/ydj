@@ -205,6 +205,16 @@ export function setMasterVolume(value: number): void {
   void getMixerEngine
 }
 
+// ─── Cue (PFL / 헤드폰) ─────────────────────────────────────
+
+export function toggleCue(deckId: DeckId): void {
+  useMixerStore.getState().toggleCueEnabled(deckId)
+}
+
+export function setCueGain(value: number): void {
+  useMixerStore.getState().setCueGain(value)
+}
+
 // ─── Pitch ───────────────────────────────────────────────────
 
 export function setPitchPercent(deckId: DeckId, percent: number): void {
