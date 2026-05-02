@@ -11,6 +11,8 @@ type AutoDuration = typeof AUTO_DURATIONS[number]
 function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
   const eq = useDeckStore((s) => s.decks[deckId].eq)
   const { setEq, setEqKill } = useDeckStore()
+  const cueOn = useMixerStore((s) => s.cueEnabled[deckId])
+  const toggleCue = useMixerStore((s) => s.toggleCueEnabled)
   const bands = ['high', 'mid', 'low'] as const
 
   const handleEq = (band: 'low' | 'mid' | 'high', db: number): void => {
@@ -26,9 +28,21 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
 
   return (
     <div className="flex flex-col items-center gap-2 px-2">
-      <span className="text-xs font-black tracking-widest text-slate-500">
-        {deckId}
-      </span>
+      <div className="flex items-center gap-1">
+        <span className="text-xs font-black tracking-widest text-slate-500">
+          {deckId}
+        </span>
+        <button
+          onClick={() => toggleCue(deckId)}
+          title={`PFL/Cue ${deckId} (헤드폰 모니터)`}
+          className={[
+            'text-[9px] leading-none px-1 py-0.5 rounded font-bold transition-colors',
+            cueOn ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'
+          ].join(' ')}
+        >
+          ♪
+        </button>
+      </div>
       {bands.map((band) => {
         const kill = eq[`${band}Kill` as 'lowKill' | 'midKill' | 'highKill']
         return (
@@ -131,6 +145,32 @@ export default function MixerPanel(): JSX.Element {
         </div>
 
         <EqChannel deckId="B" />
+      </div>
+
+      {/* Headphone (cue) controls */}
+      <div className="flex flex-col gap-1 w-full px-2 pt-1 border-t border-white/5">
+        <div className="flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-slate-500">
+          <span className="w-12">CUE GAIN</span>
+          <input
+            type="range" min={0} max={1} step={0.01}
+            value={cueGain}
+            onChange={(e) => useMixerStore.getState().setCueGain(parseFloat(e.target.value))}
+            className="flex-1 accent-emerald-500"
+          />
+          <span className="w-6 text-right font-mono">{Math.round(cueGain * 100)}</span>
+        </div>
+        <div className="flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-slate-500">
+          <span className="w-12">CUE MIX</span>
+          <input
+            type="range" min={0} max={1} step={0.01}
+            value={cueMix}
+            onChange={(e) => useMixerStore.getState().setCueMix(parseFloat(e.target.value))}
+            className="flex-1 accent-emerald-500"
+          />
+          <span className="w-6 text-right font-mono text-slate-600">
+            {cueMix < 0.5 ? 'CUE' : cueMix > 0.5 ? 'MAS' : '50/50'}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1" />
