@@ -237,8 +237,10 @@ export function loadSelectedToDeck(deckId: DeckId): void {
 //   터치 업          → 즉시 음악 재개 (현재 위치, 원래 rate). 딜레이 없음.
 //   터치 업 후 잔여 회전 → 음악 재생 중 seek로 위치 점프 (jog 모멘텀 흡수).
 //   회전 멈춤 (idle) → 세션 종료, 일반 재생으로 전환.
-//   터치 X + 회전 → ±4% pitch bend (외부 링, 재생/정지 무관).
+//   터치 X + 회전 (재생 중) → ±4% pitch bend.
+//   터치 X + 회전 (정지)    → 작은 seek (pitch bend는 무음이라 체감 없음 → 대신 위치만 살짝).
 const JOG_TICK_SEC = 0.03         // 터치 중 + 잔여 회전 시 tick당 위치 변화량
+const JOG_OUTER_TICK_SEC = 0.01   // 외부 링 + 정지 상태에서 작은 seek (pitch bend가 무음이라 대체)
 const JOG_RESIDUAL_IDLE_MS = 200  // 터치 떼고 회전도 멈춘 뒤 → 세션 종료
 const PITCH_BEND_AMOUNT = 0.04
 const PITCH_BEND_DECAY_MS = 120
@@ -317,7 +319,14 @@ export function jogStep(deckId: DeckId, direction: 1 | -1): void {
 
   const session = jogSessions[deckId]
   if (!session) {
-    pitchBendTick(deckId, direction)
+    if (deck.isPlaying) {
+      pitchBendTick(deckId, direction)
+    } else {
+      const engine = getDeckEngine(deckId)
+      const next = Math.max(0, Math.min(deck.track.duration, deck.position + direction * JOG_OUTER_TICK_SEC))
+      engine.seek(next)
+      useDeckStore.getState().setPosition(deckId, next)
+    }
     return
   }
 
