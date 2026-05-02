@@ -10,6 +10,7 @@ export class DeckEngine {
   private ctx: AudioContext
   private source: AudioBufferSourceNode | null = null
   private gainNode: GainNode
+  private preVolumeTap: GainNode
   private eqLowNode: BiquadFilterNode
   private eqMidNode: BiquadFilterNode
   private eqHighNode: BiquadFilterNode
@@ -50,11 +51,15 @@ export class DeckEngine {
     this.eqHighNode.frequency.value = 10000
 
     this.gainNode = ctx.createGain()
+    // Pre-fader tap. PFL/cue 분기와 FX 체인의 종착점이 여기를 공유한다 (post-EQ post-FX, pre-fader).
+    // gain 1로 고정 — 이 노드는 수정하지 말 것. 분기는 MixerEngine이 추가한다.
+    this.preVolumeTap = ctx.createGain()
 
-    // Chain: eq filters → gain → destination (mixer will re-route gain)
+    // Chain: eq filters → preVolumeTap → fader (gain) → destination (mixer will re-route gain)
     this.eqLowNode.connect(this.eqMidNode)
     this.eqMidNode.connect(this.eqHighNode)
-    this.eqHighNode.connect(this.gainNode)
+    this.eqHighNode.connect(this.preVolumeTap)
+    this.preVolumeTap.connect(this.gainNode)
     this.gainNode.connect(ctx.destination)
   }
 
@@ -184,9 +189,10 @@ export class DeckEngine {
     return this.eqHighNode
   }
 
-  /** Volume fader input — FX chain's final output connects here */
+  /** FX chain's final output connects here. Also the pre-fader tap point used by
+   *  MixerEngine for the cue (PFL) bus. Volume fader (gainNode) reads from here. */
   get fxOutput(): GainNode {
-    return this.gainNode
+    return this.preVolumeTap
   }
 
   // ── Transport ──────────────────────────────────────────────────────────────
