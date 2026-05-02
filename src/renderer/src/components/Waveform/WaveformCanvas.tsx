@@ -38,8 +38,8 @@ function buildPeaks(buffer: AudioBuffer): Float32Array {
   return peaks
 }
 
-// Seconds visible on each side of the playhead
-const VISIBLE_SECONDS = 6
+// Seconds visible on each side of the playhead — 작을수록 더 가까이(줌 인)
+const VISIBLE_SECONDS = 3
 
 export default function WaveformCanvas({
   audioBuffer,
