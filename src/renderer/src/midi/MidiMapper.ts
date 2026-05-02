@@ -16,7 +16,8 @@ import {
   moveBrowseSelection,
   loadSelectedToDeck,
   toggleFx,
-  cycleFxTimeDivision
+  cycleFxTimeDivision,
+  browsePress
 } from './actions'
 import type { DeckId } from '../store/deckStore'
 
@@ -114,8 +115,8 @@ export class MidiMapper {
     // Load — 현재 선택된 라이브러리 트랙을 그 덱에 로드
     if (action === 'deck.A.load') return loadSelectedToDeck('A')
     if (action === 'deck.B.load') return loadSelectedToDeck('B')
-    // Browse press — UI 동작 미정. 일단 no-op.
-    if (action === 'browse.press') return
+    // Browse press — 라이브러리 패널 토글
+    if (action === 'browse.press') return browsePress()
   }
 
   private handlePad(deckId: DeckId, padIdx: number, mode: PadMode): void {

@@ -11,7 +11,7 @@ import { useQueueStore } from './store/queueStore'
 import { getDeckEngine } from './hooks/useAudio'
 import type { ScratchHandlers } from './hooks/useDeckScratch'
 import { midiManager } from './midi/MidiManager'
-import { registerLibraryLoadCallback } from './midi/actions'
+import { registerLibraryLoadCallback, registerBrowsePressCallback } from './midi/actions'
 import MidiStatus from './components/Midi/MidiStatus'
 import MidiLearnPanel from './components/Midi/MidiLearnPanel'
 
@@ -101,12 +101,17 @@ export default function App(): JSX.Element {
     document.addEventListener('mouseup', onDragEnd)
   }, [libHeight, onDragMove, onDragEnd])
 
-  const toggleLib = (): void => {
+  const toggleLib = useCallback((): void => {
     setLibHeight((h) => {
       if (h > CLOSED_H) { lastOpenH.current = h; return CLOSED_H }
       return lastOpenH.current
     })
-  }
+  }, [])
+
+  useEffect(() => {
+    registerBrowsePressCallback(toggleLib)
+    return () => registerBrowsePressCallback(null)
+  }, [toggleLib])
 
   useEffect(() => {
     const decks: DeckId[] = ['A', 'B']

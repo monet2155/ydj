@@ -202,6 +202,16 @@ export function moveBrowseSelection(direction: 1 | -1): void {
   useLibraryStore.getState().moveSelection(direction)
 }
 
+let browsePressCallback: (() => void) | null = null
+
+export function registerBrowsePressCallback(fn: (() => void) | null): void {
+  browsePressCallback = fn
+}
+
+export function browsePress(): void {
+  browsePressCallback?.()
+}
+
 export function loadSelectedToDeck(deckId: DeckId): void {
   if (!loadCallback) return
   const { tracks, selectedId } = useLibraryStore.getState()
@@ -214,33 +224,72 @@ export function loadSelectedToDeck(deckId: DeckId): void {
   }, deckId)
 }
 
-// ─── Jog: scratch (정지 중) / pitch bend (재생 중) ───────────
+// ─── Jog: scratch via the same engine path as the UI vinyl ───
+//
+// 기존 useDeckScratch 훅과 동일한 엔진 동작을 모듈 스코프로 재구성.
+// 차이점: MIDI jog는 이산적인 ±1 tick만 보내므로 세션을 자동 시작/종료.
+//   - 첫 tick: scratch 세션 진입 (재생 중이면 playbackRate=0으로 freeze)
+//   - 매 tick: deltaSec/timeDeltaSec → rate, 또는 seek
+//   - idle 150ms: 세션 종료 (rate 복원, 재생 재개)
+const JOG_TICK_SEC = 0.03    // tick당 오디오 위치 변화량 — UI 잡 드래그와 비슷한 체감
+const JOG_IDLE_MS = 150
+const JOG_MAX_RATE = 8
 
-const BEND_AMOUNT = 0.04   // ±4% temporary speed
-const BEND_DECAY_MS = 120  // 마지막 jog 입력 후 N ms 뒤 원래 속도로 복귀
-const SCRATCH_STEP_SEC = 0.01
+interface JogSession {
+  wasPlaying: boolean
+  lastTickTime: number   // performance.now()
+  idleTimer: ReturnType<typeof setTimeout> | null
+}
 
-const bendTimers: Record<DeckId, ReturnType<typeof setTimeout> | null> = { A: null, B: null }
-const baselineRate: Record<DeckId, number> = { A: 1, B: 1 }
+const jogSessions: Record<DeckId, JogSession | null> = { A: null, B: null }
+
+function endJogSession(deckId: DeckId): void {
+  const session = jogSessions[deckId]
+  if (!session) return
+  if (session.idleTimer) clearTimeout(session.idleTimer)
+  jogSessions[deckId] = null
+
+  const engine = getDeckEngine(deckId)
+  if (session.wasPlaying) {
+    const restoreRate = useDeckStore.getState().decks[deckId].playbackRate
+    if (engine.isReverse) engine.setDirection(false, restoreRate)
+    else engine.playbackRate = restoreRate
+    if (!engine.isPlaying) engine.play()
+    useDeckStore.getState().setPlaying(deckId, true)
+  } else {
+    useDeckStore.getState().setPlaying(deckId, false)
+  }
+  useDeckStore.getState().setPosition(deckId, engine.position)
+}
 
 export function jogStep(deckId: DeckId, direction: 1 | -1): void {
   const deck = useDeckStore.getState().decks[deckId]
   if (!deck.track) return
-  if (deck.isPlaying) {
-    // pitch bend
-    const baseline = useDeckStore.getState().decks[deckId].playbackRate
-    if (bendTimers[deckId] === null) baselineRate[deckId] = baseline
-    const bent = baselineRate[deckId] * (1 + direction * BEND_AMOUNT)
-    getDeckEngine(deckId).playbackRate = bent
-    if (bendTimers[deckId]) clearTimeout(bendTimers[deckId]!)
-    bendTimers[deckId] = setTimeout(() => {
-      getDeckEngine(deckId).playbackRate = baselineRate[deckId]
-      bendTimers[deckId] = null
-    }, BEND_DECAY_MS)
+  const engine = getDeckEngine(deckId)
+  const now = performance.now()
+
+  let session = jogSessions[deckId]
+  if (!session) {
+    session = { wasPlaying: engine.isPlaying, lastTickTime: now, idleTimer: null }
+    jogSessions[deckId] = session
+    if (session.wasPlaying) engine.playbackRate = 0
+  }
+
+  const timeDeltaSec = Math.max(0.001, (now - session.lastTickTime) / 1000)
+  session.lastTickTime = now
+  const deltaSec = direction * JOG_TICK_SEC
+
+  if (session.wasPlaying) {
+    const rate = deltaSec / timeDeltaSec
+    if (rate >= 0) engine.setDirection(false, Math.min(JOG_MAX_RATE, rate))
+    else engine.setDirection(true, Math.min(JOG_MAX_RATE, Math.abs(rate)))
+    useDeckStore.getState().setPosition(deckId, engine.position)
   } else {
-    // scratch (단순 step seek)
-    const next = Math.max(0, Math.min(deck.track.duration, deck.position + direction * SCRATCH_STEP_SEC))
-    getDeckEngine(deckId).seek(next)
+    const next = Math.max(0, Math.min(deck.track.duration, deck.position + deltaSec))
+    engine.seek(next)
     useDeckStore.getState().setPosition(deckId, next)
   }
+
+  if (session.idleTimer) clearTimeout(session.idleTimer)
+  session.idleTimer = setTimeout(() => endJogSession(deckId), JOG_IDLE_MS)
 }
