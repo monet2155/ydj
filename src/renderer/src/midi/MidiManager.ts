@@ -40,6 +40,13 @@ class MidiManager {
     return () => { this.listeners.delete(listener) }
   }
 
+  // Fired the first time a known device appears in this session.
+  private knownDeviceCallback: ((deviceName: string) => void) | null = null
+  private announcedDevices = new Set<string>()
+  registerKnownDeviceCallback(fn: ((deviceName: string) => void) | null): void {
+    this.knownDeviceCallback = fn
+  }
+
   async init(): Promise<void> {
     if (this.initialized) return
     this.initialized = true
@@ -79,6 +86,10 @@ class MidiManager {
 
       if (input.state === 'connected' && !this.boundInputs.has(input.id)) {
         const deviceName = input.name ?? 'Unknown'
+        if (deviceName && !this.announcedDevices.has(deviceName)) {
+          this.announcedDevices.add(deviceName)
+          this.knownDeviceCallback?.(deviceName)
+        }
         input.onmidimessage = (e: MIDIMessageEvent): void => {
           if (!e.data) return
           if (this.debugLog) {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { pickFallbackDeviceId, STORAGE_KEY } from '../store/outputDeviceStore'
+import { pickFallbackDeviceId, findDeviceIdByLabel, STORAGE_KEY } from '../store/outputDeviceStore'
 
 describe('pickFallbackDeviceId', () => {
   it("returns the same id when device is still present", () => {
@@ -24,5 +24,22 @@ describe('outputDeviceStore — persistence', () => {
 
   it('storage key is namespaced and versioned', () => {
     expect(STORAGE_KEY).toMatch(/^ydj\.audioOutputs\./)
+  })
+})
+
+describe('findDeviceIdByLabel', () => {
+  const devs = [
+    { deviceId: '1', label: 'MacBook Pro Speakers' },
+    { deviceId: '2', label: 'Numark Party Mix MKII' },
+    { deviceId: '3', label: 'AirPods Pro' }
+  ] as MediaDeviceInfo[]
+
+  it('case-insensitive match by substring', () => {
+    expect(findDeviceIdByLabel(devs, 'party mix')).toBe('2')
+    expect(findDeviceIdByLabel(devs, 'AIRPODS')).toBe('3')
+  })
+
+  it('returns null when no match', () => {
+    expect(findDeviceIdByLabel(devs, 'pioneer')).toBeNull()
   })
 })

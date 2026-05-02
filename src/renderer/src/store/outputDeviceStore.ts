@@ -44,6 +44,14 @@ export function pickFallbackDeviceId(currentId: string, devices: MediaDeviceInfo
   return devices.some((d) => d.deviceId === currentId) ? currentId : 'default'
 }
 
+/** Find an audiooutput device whose label contains the given substring (case-insensitive).
+ *  Returns deviceId or null. */
+export function findDeviceIdByLabel(devices: MediaDeviceInfo[], substring: string): string | null {
+  const needle = substring.toLowerCase()
+  const match = devices.find((d) => d.label.toLowerCase().includes(needle))
+  return match?.deviceId ?? null
+}
+
 const persisted = loadPersisted()
 
 export const useOutputDeviceStore = create<OutputDeviceStore>((set, get) => ({

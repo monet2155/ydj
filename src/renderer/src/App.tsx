@@ -14,7 +14,7 @@ import { midiManager } from './midi/MidiManager'
 import { registerLibraryLoadCallback, registerBrowsePressCallback } from './midi/actions'
 import MidiStatus from './components/Midi/MidiStatus'
 import MidiLearnPanel from './components/Midi/MidiLearnPanel'
-import { useOutputDeviceStore } from './store/outputDeviceStore'
+import { useOutputDeviceStore, findDeviceIdByLabel } from './store/outputDeviceStore'
 import AudioSettings from './components/Settings/AudioSettings'
 import SettingsButton from './components/Settings/SettingsButton'
 import ToastContainer, { showToast } from './components/Toast'
@@ -49,6 +49,25 @@ export default function App(): JSX.Element {
   useEffect(() => { fetchTracks() }, [fetchTracks])
 
   useEffect(() => { void midiManager.init() }, [])
+
+  // 알려진 컨트롤러가 처음 연결되면 마스터 출력으로 추천 (한 세션 1회)
+  useEffect(() => {
+    midiManager.registerKnownDeviceCallback((deviceName) => {
+      void useOutputDeviceStore.getState().refreshDevices().then(() => {
+        const devices = useOutputDeviceStore.getState().availableDevices
+        const matchId = findDeviceIdByLabel(devices, deviceName)
+        if (!matchId) return
+        if (useOutputDeviceStore.getState().masterDeviceId === matchId) return
+        showToast(`${deviceName} 감지 — 마스터 출력으로 사용?`, {
+          action: {
+            label: '사용',
+            onClick: () => useOutputDeviceStore.getState().setDeviceId('master', matchId)
+          }
+        })
+      })
+    })
+    return () => midiManager.registerKnownDeviceCallback(null)
+  }, [])
 
   const [midiPanelOpen, setMidiPanelOpen] = useState(false)
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false)
