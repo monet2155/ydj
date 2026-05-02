@@ -48,8 +48,15 @@ function buildIndex(preset: Preset): Index {
 
 const PAD_LOOP_BEATS = [1, 2, 4, 8] // Pad 1~4 in Loop mode
 
+// Some controllers send TWO NoteOn messages per press cycle (one on press, one on release)
+// instead of NoteOn+NoteOff. That makes a momentary handler toggle twice and revert.
+// Debounce: any second NoteOn for the same address within this window is treated as
+// the release pair and ignored.
+const MOMENTARY_DEBOUNCE_MS = 80
+
 export class MidiMapper {
   private index: Index
+  private lastMomentaryFire = new Map<string, number>()
 
   constructor(public preset: Preset) {
     this.index = buildIndex(preset)
@@ -75,8 +82,15 @@ export class MidiMapper {
 
     switch (binding.value.kind) {
       case 'momentary': {
-        // NoteOn vel>0만 trigger. NoteOff/vel0 무시.
-        if (type === 0x90 && d2 > 0) this.dispatchTrigger(action)
+        // NoteOn vel>0만 trigger. NoteOff/vel0 무시. release-pair는 디바운스로 흡수.
+        if (type === 0x90 && d2 > 0) {
+          const key = `${channel}:${d1}`
+          const now = performance.now()
+          const last = this.lastMomentaryFire.get(key) ?? -Infinity
+          if (now - last < MOMENTARY_DEBOUNCE_MS) return
+          this.lastMomentaryFire.set(key, now)
+          this.dispatchTrigger(action)
+        }
         return
       }
       case 'absolute': {
