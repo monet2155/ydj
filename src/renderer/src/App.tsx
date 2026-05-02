@@ -11,6 +11,7 @@ import { useQueueStore } from './store/queueStore'
 import { getDeckEngine } from './hooks/useAudio'
 import type { ScratchHandlers } from './hooks/useDeckScratch'
 import { midiManager } from './midi/MidiManager'
+import { registerLibraryLoadCallback } from './midi/actions'
 import MidiStatus from './components/Midi/MidiStatus'
 import MidiLearnPanel from './components/Midi/MidiLearnPanel'
 
@@ -44,6 +45,11 @@ export default function App(): JSX.Element {
   useEffect(() => { fetchTracks() }, [fetchTracks])
 
   useEffect(() => { void midiManager.init() }, [])
+
+  useEffect(() => {
+    registerLibraryLoadCallback(handleLibraryLoad)
+    return () => registerLibraryLoadCallback(null)
+  }, [])
 
   const [midiPanelOpen, setMidiPanelOpen] = useState(false)
 

@@ -17,9 +17,9 @@ interface LibraryPanelProps {
 export default function LibraryPanel({ onLoad }: LibraryPanelProps): JSX.Element {
   const tracks = useLibraryStore((s) => s.tracks)
   const fetchTracks = useLibraryStore((s) => s.fetchTracks)
+  const selectedId = useLibraryStore((s) => s.selectedId)
+  const setSelectedId = useLibraryStore((s) => s.setSelectedId)
   const { queues, enqueue, remove } = useQueueStore()
-
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)

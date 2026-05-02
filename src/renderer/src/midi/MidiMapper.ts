@@ -12,7 +12,9 @@ import {
   setCrossfader,
   setMasterVolume,
   setPitchPercent,
-  jogStep
+  jogStep,
+  moveBrowseSelection,
+  loadSelectedToDeck
 } from './actions'
 import type { DeckId } from '../store/deckStore'
 
@@ -107,8 +109,11 @@ export class MidiMapper {
     // PFL/Cue Monitor — TODO: 실제 헤드폰 모니터링이 구현되면 연결
     if (action === 'deck.A.cueMonitor' || action === 'deck.B.cueMonitor') return
 
-    // Browse / Load — TODO: 라이브러리 큐 시스템과 연결
-    if (action === 'browse.press' || action === 'deck.A.load' || action === 'deck.B.load') return
+    // Load — 현재 선택된 라이브러리 트랙을 그 덱에 로드
+    if (action === 'deck.A.load') return loadSelectedToDeck('A')
+    if (action === 'deck.B.load') return loadSelectedToDeck('B')
+    // Browse press — 선택 트랙 활성화/포커스 정도. 일단 no-op.
+    if (action === 'browse.press') return
   }
 
   private handlePad(deckId: DeckId, padIdx: number, mode: PadMode): void {
@@ -154,6 +159,6 @@ export class MidiMapper {
   private dispatchRelative(action: ActionKey, dir: 1 | -1): void {
     if (action === 'deck.A.jog') return jogStep('A', dir)
     if (action === 'deck.B.jog') return jogStep('B', dir)
-    if (action === 'browse.turn') return // TODO: 라이브러리 스크롤
+    if (action === 'browse.turn') return moveBrowseSelection(dir)
   }
 }

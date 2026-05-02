@@ -1,6 +1,7 @@
 import { useDeckStore, type DeckId } from '../store/deckStore'
 import { useMixerStore } from '../store/mixerStore'
 import { useFxStore } from '../store/fxStore'
+import { useLibraryStore } from '../store/libraryStore'
 import { getAudioEngine, getDeckEngine, getMixerEngine } from '../hooks/useAudio'
 import type { FilterMode } from '../engine/FxEngine'
 
@@ -155,6 +156,37 @@ export function setPitchPercent(deckId: DeckId, percent: number): void {
   const rate = 1 + clamped / 100
   getDeckEngine(deckId).playbackRate = rate
   useDeckStore.getState().setPlaybackRate(deckId, rate)
+}
+
+// ─── Library / Browse / Load ─────────────────────────────────
+
+// React 컴포넌트에서 mount 시 등록. MIDI Load 액션이 이 콜백으로 위임.
+type LoadCallback = (
+  filePath: string,
+  meta: { title: string; duration: number; videoId: string },
+  deckId: DeckId
+) => void
+
+let loadCallback: LoadCallback | null = null
+
+export function registerLibraryLoadCallback(fn: LoadCallback | null): void {
+  loadCallback = fn
+}
+
+export function moveBrowseSelection(direction: 1 | -1): void {
+  useLibraryStore.getState().moveSelection(direction)
+}
+
+export function loadSelectedToDeck(deckId: DeckId): void {
+  if (!loadCallback) return
+  const { tracks, selectedId } = useLibraryStore.getState()
+  const track = tracks.find((t) => t.videoId === selectedId)
+  if (!track) return
+  loadCallback(track.filePath, {
+    title: track.title,
+    duration: track.duration,
+    videoId: track.videoId
+  }, deckId)
 }
 
 // ─── Jog: scratch (정지 중) / pitch bend (재생 중) ───────────
