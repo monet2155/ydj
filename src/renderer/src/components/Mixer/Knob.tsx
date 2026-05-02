@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
 
 interface KnobProps {
   value: number      // current value
@@ -17,9 +17,15 @@ export default function Knob({
 }: KnobProps): JSX.Element {
   const dragRef = useRef<{ startY: number; startVal: number } | null>(null)
 
-  // Map value → rotation angle: min=-135°, max=+135°
+  // Piecewise mapping centered on defaultValue:
+  //   min..defaultValue → -135°..0°  (lower half)
+  //   defaultValue..max →   0°..+135° (upper half)
+  // 비대칭 레인지(예: -40..0..+6)에서 시각적 중심이 0이 되도록 한다.
   const range = max - min
-  const angle = ((value - min) / range) * 270 - 135
+  const center = defaultValue
+  const angle = value <= center
+    ? (center === min ? 0 : ((value - center) / (center - min)) * 135)  // -135..0
+    : (center === max ? 0 : ((value - center) / (max - center)) * 135)  // 0..+135
 
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
