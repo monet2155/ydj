@@ -54,6 +54,20 @@ export function findDeviceIdByLabel(devices: MediaDeviceInfo[], substring: strin
 
 const persisted = loadPersisted()
 
+// enumerateDevices()는 media 권한이 한 번이라도 grant된 적 있어야 label과 전체
+// audiooutput 목록을 반환한다. 첫 호출 시 짧게 getUserMedia를 잡아 권한을 unlock.
+let mediaPermissionUnlocked = false
+async function unlockMediaPermission(): Promise<void> {
+  if (mediaPermissionUnlocked) return
+  mediaPermissionUnlocked = true
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    stream.getTracks().forEach((t) => t.stop())
+  } catch {
+    // 사용자가 거부했거나 OS-level TCC 프롬프트 미허용. 라벨이 비어 있을 수 있음.
+  }
+}
+
 export const useOutputDeviceStore = create<OutputDeviceStore>((set, get) => ({
   availableDevices: [],
   masterDeviceId: persisted.masterDeviceId,
@@ -61,6 +75,7 @@ export const useOutputDeviceStore = create<OutputDeviceStore>((set, get) => ({
 
   refreshDevices: async () => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices) return
+    await unlockMediaPermission()
     const all = await navigator.mediaDevices.enumerateDevices()
     const audioOuts = all.filter((d) => d.kind === 'audiooutput')
     const { masterDeviceId, headphoneDeviceId } = get()

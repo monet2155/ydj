@@ -40,17 +40,15 @@ function createWindow(): void {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.ydj.app')
 
-  // WebMIDI 권한 허용 (DJ 컨트롤러용). sysex 미사용.
+  // 권한 허용:
+  //   - midi/midiSysex: WebMIDI (DJ 컨트롤러)
+  //   - media: getUserMedia. 실제 마이크는 안 쓰지만 enumerateDevices()가
+  //     장치 label과 전체 audiooutput 목록을 보여주려면 media 권한이 필요.
+  const allowed = new Set(['midi', 'midiSysex', 'media'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    if (permission === 'midi' || permission === 'midiSysex') {
-      callback(true)
-      return
-    }
-    callback(false)
+    callback(allowed.has(permission))
   })
-  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
-    return permission === 'midi' || permission === 'midiSysex'
-  })
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => allowed.has(permission))
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
