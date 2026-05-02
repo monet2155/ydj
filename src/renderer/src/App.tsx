@@ -107,8 +107,6 @@ export default function App(): JSX.Element {
     return () => registerLibraryLoadCallback(null)
   }, [])
 
-  const [midiPanelOpen, setMidiPanelOpen] = useState(false)
-
   const handleLibraryLoad = (
     filePath: string,
     meta: { title: string; duration: number; videoId: string },
