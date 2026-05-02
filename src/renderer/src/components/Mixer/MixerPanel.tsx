@@ -61,6 +61,10 @@ function EqChannel({ deckId }: { deckId: DeckId }): JSX.Element {
 
 export default function MixerPanel(): JSX.Element {
   const { crossfader, masterVolume, setCrossfader, setMasterVolume } = useMixerStore()
+  const cueEnabledA = useMixerStore((s) => s.cueEnabled.A)
+  const cueEnabledB = useMixerStore((s) => s.cueEnabled.B)
+  const cueGain = useMixerStore((s) => s.cueGain)
+  const cueMix = useMixerStore((s) => s.cueMix)
   const [autoDuration, setAutoDuration] = useState<AutoDuration>(8)
   const [autoFading, setAutoFading] = useState(false)
   const [autoRemaining, setAutoRemaining] = useState(0)
@@ -68,6 +72,10 @@ export default function MixerPanel(): JSX.Element {
 
   useEffect(() => { getMixerEngine().setCrossfader(crossfader) }, [crossfader])
   useEffect(() => { getMixerEngine().setMasterVolume(masterVolume) }, [masterVolume])
+  useEffect(() => { getMixerEngine().setCueEnabled('A', cueEnabledA) }, [cueEnabledA])
+  useEffect(() => { getMixerEngine().setCueEnabled('B', cueEnabledB) }, [cueEnabledB])
+  useEffect(() => { getMixerEngine().setCueGain(cueGain) }, [cueGain])
+  useEffect(() => { getMixerEngine().setCueMix(cueMix) }, [cueMix])
 
   const handleAuto = (): void => {
     if (autoFading) {
