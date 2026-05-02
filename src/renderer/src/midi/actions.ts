@@ -84,14 +84,18 @@ export function setAutoLoop(deckId: DeckId, beats: number): void {
   if (!deck.track || !deck.bpm) return
   const secondsPerBeat = 60 / (deck.bpm * deck.playbackRate)
   const length = secondsPerBeat * beats
+
+  // 활성 루프와 같은 길이(=같은 beat 수) 패드를 다시 누르면 해제. 다른 길이면 새 루프.
+  if (deck.loop.active && deck.loop.start !== null && deck.loop.end !== null) {
+    const activeLength = deck.loop.end - deck.loop.start
+    if (Math.abs(activeLength - length) < 0.001) {
+      getDeckEngine(deckId).deactivateLoop()
+      useDeckStore.getState().setLoop(deckId, { active: false, start: null, end: null })
+      return
+    }
+  }
   const start = deck.position
   const end = start + length
-  // 동일 패드를 다시 누르면 루프 해제 (Serato 식 토글). 다른 길이를 누르면 새 루프로 갱신.
-  if (deck.loop.active && deck.loop.start === start && deck.loop.end === end) {
-    getDeckEngine(deckId).deactivateLoop()
-    useDeckStore.getState().setLoop(deckId, { active: false, start: null, end: null })
-    return
-  }
   getDeckEngine(deckId).activateLoop(start, end)
   useDeckStore.getState().setLoop(deckId, { active: true, start, end })
 }
