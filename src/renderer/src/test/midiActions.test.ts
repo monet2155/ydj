@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSyncRate, computeFilterFromKnob } from '../midi/actions'
+import { computeSyncRate, computeFilterFromKnob, nextFxTimeDivision } from '../midi/actions'
 
 describe('computeSyncRate', () => {
   it('matches master effective BPM (master at 120, this at 100, rate 1) → 1.2', () => {
@@ -46,5 +46,17 @@ describe('computeFilterFromKnob', () => {
   it('quarter from center → param ≈ 0.5', () => {
     expect(computeFilterFromKnob(0.25).param).toBeCloseTo(0.5, 5)
     expect(computeFilterFromKnob(0.75).param).toBeCloseTo(0.5, 5)
+  })
+})
+
+describe('nextFxTimeDivision', () => {
+  it('cycles 1/16 → 1/8 → 1/4 → 1/2 → 1 → 2 → 4 → 8 → 1/16', () => {
+    expect(nextFxTimeDivision(1 / 16)).toBe(1 / 8)
+    expect(nextFxTimeDivision(1 / 8)).toBe(1 / 4)
+    expect(nextFxTimeDivision(8)).toBe(1 / 16)
+  })
+
+  it('falls back to 1/8 (next from 1/16) when current is unknown', () => {
+    expect(nextFxTimeDivision(0.123456)).toBe(1 / 8)
   })
 })

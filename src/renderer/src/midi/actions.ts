@@ -137,6 +137,31 @@ export function setFilter(deckId: DeckId, value: number): void {
   useFxStore.getState().setFilter(deckId, computeFilterFromKnob(value))
 }
 
+// ─── FX mode pad toggles ─────────────────────────────────────
+
+const FX_TIME_DIVISIONS = [1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8] as const
+
+/** Pure: 현재 param에서 다음 time-division으로 순환했을 때의 새 param */
+export function nextFxTimeDivision(currentParam: number): number {
+  const idx = FX_TIME_DIVISIONS.findIndex((v) => Math.abs(v - currentParam) < 1e-6)
+  const nextIdx = ((idx < 0 ? 0 : idx) + 1) % FX_TIME_DIVISIONS.length
+  return FX_TIME_DIVISIONS[nextIdx]
+}
+
+export function toggleFx(deckId: DeckId, slot: 'delay' | 'reverb' | 'flanger'): void {
+  const current = useFxStore.getState().fx[deckId][slot]
+  const setter = slot === 'delay'  ? useFxStore.getState().setDelay
+              : slot === 'reverb' ? useFxStore.getState().setReverb
+                                  : useFxStore.getState().setFlanger
+  setter(deckId, { enabled: !current.enabled })
+}
+
+/** Pad 4 in FX mode: cycle delay slot's time division (param) */
+export function cycleFxTimeDivision(deckId: DeckId): void {
+  const current = useFxStore.getState().fx[deckId].delay.param
+  useFxStore.getState().setDelay(deckId, { param: nextFxTimeDivision(current) })
+}
+
 export function setCrossfader(value: number): void {
   // 0=A, 0.5=center, 1=B
   useMixerStore.getState().setCrossfader(Math.max(0, Math.min(1, value)))

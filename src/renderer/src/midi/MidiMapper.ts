@@ -14,7 +14,9 @@ import {
   setPitchPercent,
   jogStep,
   moveBrowseSelection,
-  loadSelectedToDeck
+  loadSelectedToDeck,
+  toggleFx,
+  cycleFxTimeDivision
 } from './actions'
 import type { DeckId } from '../store/deckStore'
 
@@ -125,10 +127,14 @@ export class MidiMapper {
         setAutoLoop(deckId, PAD_LOOP_BEATS[padIdx] ?? 1)
         return
       case 'sampler':
-        // SPEC 미정 — 4단계 (a)에선 스킵
+        // SPEC 미정 — 일단 no-op
         return
       case 'fx':
-        // SPEC §3.10 — FxEngine 인터페이스 매핑은 (b)에서
+        // Pad 1~3 = delay / reverb / flanger 토글, Pad 4 = delay time-div cycle
+        if (padIdx === 0) return toggleFx(deckId, 'delay')
+        if (padIdx === 1) return toggleFx(deckId, 'reverb')
+        if (padIdx === 2) return toggleFx(deckId, 'flanger')
+        if (padIdx === 3) return cycleFxTimeDivision(deckId)
         return
     }
   }
