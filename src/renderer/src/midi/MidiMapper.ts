@@ -17,7 +17,9 @@ import {
   loadSelectedToDeck,
   toggleFx,
   cycleFxTimeDivision,
-  browsePress
+  browsePress,
+  jogTouchStart,
+  jogTouchEnd
 } from './actions'
 import type { DeckId } from '../store/deckStore'
 
@@ -32,7 +34,12 @@ function buildIndex(preset: Preset): Index {
   const map: Index = new Map()
   for (const [k, b] of Object.entries(preset.bindings)) {
     if (!b) continue
-    map.set(indexKey(b.type, b.channel, b.data1), { action: k as ActionKey, binding: b })
+    const entry = { action: k as ActionKey, binding: b }
+    map.set(indexKey(b.type, b.channel, b.data1), entry)
+    // jog-touch: NoteOn(터치 다운)과 NoteOff(터치 업) 둘 다 같은 액션으로 라우트
+    if (b.value.kind === 'jog-touch' && b.type === 0x90) {
+      map.set(indexKey(0x80, b.channel, b.data1), entry)
+    }
   }
   return map
 }
@@ -95,6 +102,12 @@ export class MidiMapper {
         if (type === 0x90 && d2 > 0) {
           useMidiStore.getState().setPadMode(binding.value.deck, binding.value.mode)
         }
+        return
+      }
+      case 'jog-touch': {
+        const isDown = type === 0x90 && d2 > 0
+        if (isDown) jogTouchStart(binding.value.deck)
+        else jogTouchEnd(binding.value.deck)
         return
       }
     }

@@ -224,24 +224,30 @@ export function loadSelectedToDeck(deckId: DeckId): void {
   }, deckId)
 }
 
-// ─── Jog: scratch via the same engine path as the UI vinyl ───
+// ─── Jog: Serato-style touch-to-freeze + scratch / pitch-bend ──
 //
-// 기존 useDeckScratch 훅과 동일한 엔진 동작을 모듈 스코프로 재구성.
-// 차이점: MIDI jog는 이산적인 ±1 tick만 보내므로 세션을 자동 시작/종료.
-//   - 첫 tick: scratch 세션 진입 (재생 중이면 playbackRate=0으로 freeze)
-//   - 매 tick: deltaSec/timeDeltaSec → rate, 또는 seek
-//   - idle 150ms: 세션 종료 (rate 복원, 재생 재개)
-const JOG_TICK_SEC = 0.03    // tick당 오디오 위치 변화량 — UI 잡 드래그와 비슷한 체감
-const JOG_IDLE_MS = 150      // 손 떼고 음원 재개까지
+// Party Mix MKII는 잡 위 터치를 NoteOn/Off로 보냄(같은 ch/d1, status로 구분).
+//   touch down (NoteOn)  → scratch 세션 시작, 재생 중이면 freeze
+//   rotate (CC) + 터치 중 → scratch (UI 비닐 드래그와 동일 경로)
+//   rotate (CC) + 터치 X  → 가벼운 pitch bend
+//   touch up (NoteOff)   → scratch 세션 종료, 재생 복귀
+//
+// idle timeout은 안전장치 — touch up이 누락되어도 짧은 시간 후 자동 복귀.
+const JOG_TICK_SEC = 0.03
+const JOG_IDLE_MS = 800        // 안전장치 (보통은 NoteOff로 종료됨)
 const JOG_MAX_RATE = 8
+const PITCH_BEND_AMOUNT = 0.04  // 외부 링 회전 시 ±4%
+const PITCH_BEND_DECAY_MS = 120
 
 interface JogSession {
   wasPlaying: boolean
-  lastTickTime: number   // performance.now()
+  lastTickTime: number
   idleTimer: ReturnType<typeof setTimeout> | null
 }
 
 const jogSessions: Record<DeckId, JogSession | null> = { A: null, B: null }
+const bendTimers: Record<DeckId, ReturnType<typeof setTimeout> | null> = { A: null, B: null }
+const bendBaseline: Record<DeckId, number> = { A: 1, B: 1 }
 
 function endJogSession(deckId: DeckId): void {
   const session = jogSessions[deckId]
@@ -262,19 +268,47 @@ function endJogSession(deckId: DeckId): void {
   useDeckStore.getState().setPosition(deckId, engine.position)
 }
 
+export function jogTouchStart(deckId: DeckId): void {
+  const existing = jogSessions[deckId]
+  if (existing) {
+    if (existing.idleTimer) clearTimeout(existing.idleTimer)
+  }
+  const engine = getDeckEngine(deckId)
+  const wasPlaying = engine.isPlaying
+  jogSessions[deckId] = { wasPlaying, lastTickTime: performance.now(), idleTimer: null }
+  if (wasPlaying) engine.playbackRate = 0
+}
+
+export function jogTouchEnd(deckId: DeckId): void {
+  endJogSession(deckId)
+}
+
+function pitchBendTick(deckId: DeckId, direction: 1 | -1): void {
+  const baseline = useDeckStore.getState().decks[deckId].playbackRate
+  if (bendTimers[deckId] === null) bendBaseline[deckId] = baseline
+  const bent = bendBaseline[deckId] * (1 + direction * PITCH_BEND_AMOUNT)
+  getDeckEngine(deckId).playbackRate = bent
+  if (bendTimers[deckId]) clearTimeout(bendTimers[deckId]!)
+  bendTimers[deckId] = setTimeout(() => {
+    getDeckEngine(deckId).playbackRate = bendBaseline[deckId]
+    bendTimers[deckId] = null
+  }, PITCH_BEND_DECAY_MS)
+}
+
 export function jogStep(deckId: DeckId, direction: 1 | -1): void {
   const deck = useDeckStore.getState().decks[deckId]
   if (!deck.track) return
-  const engine = getDeckEngine(deckId)
-  const now = performance.now()
 
-  let session = jogSessions[deckId]
+  const session = jogSessions[deckId]
   if (!session) {
-    session = { wasPlaying: engine.isPlaying, lastTickTime: now, idleTimer: null }
-    jogSessions[deckId] = session
-    if (session.wasPlaying) engine.playbackRate = 0
+    // 터치 없이 회전 = pitch bend (외부 링)
+    if (deck.isPlaying) pitchBendTick(deckId, direction)
+    return
   }
 
+  // 터치 중 회전 = scratch
+  const engine = getDeckEngine(deckId)
+  const now = performance.now()
   const timeDeltaSec = Math.max(0.001, (now - session.lastTickTime) / 1000)
   session.lastTickTime = now
   const deltaSec = direction * JOG_TICK_SEC

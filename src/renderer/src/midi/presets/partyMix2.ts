@@ -34,8 +34,11 @@ export const partyMix2Preset: Preset = {
     'deck.B.padMode.fx':      { type: 0x90, channel: 5, data1: 0x0f, value: { kind: 'mode-echo', deck: 'B', mode: 'fx' } },
 
     // ─── Jog ─────────────────────────────────────────────
-    'deck.A.jog': { type: 0xb0, channel: 0, data1: 0x06, value: { kind: 'relative-signed' } },
-    'deck.B.jog': { type: 0xb0, channel: 1, data1: 0x06, value: { kind: 'relative-signed' } },
+    // 회전 (CC)와 터치(NoteOn/Off)가 같은 ch/d1을 공유 — status로 분리.
+    'deck.A.jog':       { type: 0xb0, channel: 0, data1: 0x06, value: { kind: 'relative-signed' } },
+    'deck.B.jog':       { type: 0xb0, channel: 1, data1: 0x06, value: { kind: 'relative-signed' } },
+    'deck.A.jog.touch': { type: 0x90, channel: 0, data1: 0x06, value: { kind: 'jog-touch', deck: 'A' } },
+    'deck.B.jog.touch': { type: 0x90, channel: 1, data1: 0x06, value: { kind: 'jog-touch', deck: 'B' } },
 
     // ─── Faders / Pitch ──────────────────────────────────
     'deck.A.volume':    { type: 0xb0, channel: 0,  data1: 0x1c, value: { kind: 'absolute' } },

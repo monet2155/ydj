@@ -30,8 +30,9 @@ export interface MidiBinding {
   value:
     | { kind: 'momentary' }                                    // 버튼 (NoteOn vel>0 → trigger)
     | { kind: 'absolute' }                                     // CC d2 0~127 → 0..1
-    | { kind: 'relative-signed' }                              // CC d2: 1=+1, 127=-1
+    | { kind: 'relative-signed' }                              // CC d2: 1..63=+N, 65..127=-(128-N)
     | { kind: 'mode-echo'; deck: 'A' | 'B'; mode: PadMode }    // 패드모드 echo
+    | { kind: 'jog-touch'; deck: 'A' | 'B' }                   // NoteOn=down / NoteOff=up
 }
 
 export type ActionKey =
@@ -47,6 +48,7 @@ export type ActionKey =
   | 'deck.B.padMode.cue' | 'deck.B.padMode.loop' | 'deck.B.padMode.sampler' | 'deck.B.padMode.fx'
   // Jog
   | 'deck.A.jog' | 'deck.B.jog'
+  | 'deck.A.jog.touch' | 'deck.B.jog.touch'
   // Faders / Pitch
   | 'deck.A.volume' | 'deck.B.volume'
   | 'mixer.crossfader'
