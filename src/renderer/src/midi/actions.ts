@@ -240,7 +240,7 @@ export function loadSelectedToDeck(deckId: DeckId): void {
 //   터치 X + 회전 (재생 중) → ±4% pitch bend.
 //   터치 X + 회전 (정지)    → 작은 seek (pitch bend는 무음이라 체감 없음 → 대신 위치만 살짝).
 const JOG_TICK_SEC = 0.03         // 터치 중 + 잔여 회전 시 tick당 위치 변화량
-const JOG_OUTER_TICK_SEC = 0.01   // 외부 링 + 정지 상태에서 작은 seek (pitch bend가 무음이라 대체)
+const JOG_OUTER_TICK_SEC = 0.003  // 외부 링 + 정지 상태에서 미세 seek — 재생 중 pitch bend 체감과 비슷한 속도
 const JOG_RESIDUAL_IDLE_MS = 200  // 터치 떼고 회전도 멈춘 뒤 → 세션 종료
 const PITCH_BEND_AMOUNT = 0.04
 const PITCH_BEND_DECAY_MS = 120
