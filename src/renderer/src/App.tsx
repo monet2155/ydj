@@ -17,6 +17,7 @@ import MidiLearnPanel from './components/Midi/MidiLearnPanel'
 import { useOutputDeviceStore } from './store/outputDeviceStore'
 import AudioSettings from './components/Settings/AudioSettings'
 import SettingsButton from './components/Settings/SettingsButton'
+import ToastContainer, { showToast } from './components/Toast'
 
 interface DeckDiskProps {
   deckId: DeckId
@@ -61,6 +62,22 @@ export default function App(): JSX.Element {
       getMixerEngine().attachCueAudioElement(cueAudioRef.current)
     }
     void refreshOutputDevices()
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices) return
+    const handleChange = (): void => {
+      const before = useOutputDeviceStore.getState()
+      void refreshOutputDevices().then(() => {
+        const after = useOutputDeviceStore.getState()
+        if (before.masterDeviceId !== 'default' && after.masterDeviceId === 'default') {
+          showToast('Master 출력 장치 분리됨 — 시스템 기본으로 전환', { kind: 'warn' })
+        }
+        if (before.headphoneDeviceId !== 'default' && after.headphoneDeviceId === 'default') {
+          showToast('Headphone 출력 장치 분리됨 — 시스템 기본으로 전환', { kind: 'warn' })
+        }
+      })
+    }
+    navigator.mediaDevices.addEventListener('devicechange', handleChange)
+    return () => navigator.mediaDevices.removeEventListener('devicechange', handleChange)
   }, [refreshOutputDevices])
 
   useEffect(() => { void getMixerEngine().setMasterSinkId(masterDeviceId) }, [masterDeviceId])
@@ -172,6 +189,8 @@ export default function App(): JSX.Element {
 
       {/* Hidden audio sink for the cue (PFL) bus */}
       <audio ref={cueAudioRef} style={{ display: 'none' }} />
+
+      <ToastContainer />
 
       {/* Waveforms */}
       <WaveformRow scratchA={scratchA} scratchB={scratchB} />
