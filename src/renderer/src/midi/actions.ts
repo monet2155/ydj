@@ -239,7 +239,8 @@ export function loadSelectedToDeck(deckId: DeckId): void {
 //   회전 멈춤 (idle) → 세션 종료, 일반 재생으로 전환.
 //   터치 X + 회전 (재생 중) → ±4% pitch bend (외부 링).
 //   터치 X + 회전 (정지) → seek (트랙 탐색).
-const JOG_TICK_SEC = 0.03
+const JOG_TICK_SEC = 0.03         // 터치 중 + 잔여 회전 시 tick당 위치 변화량
+const JOG_OUTER_TICK_SEC = 0.01   // 외부 링 seek (정지 중) — 조금 더 느리게
 const JOG_RESIDUAL_IDLE_MS = 200  // 터치 떼고 회전도 멈춘 뒤 → 세션 종료
 const PITCH_BEND_AMOUNT = 0.04
 const PITCH_BEND_DECAY_MS = 120
@@ -321,9 +322,9 @@ export function jogStep(deckId: DeckId, direction: 1 | -1): void {
     if (deck.isPlaying) {
       pitchBendTick(deckId, direction)
     } else {
-      // 정지 상태에서 외부 링 회전 = 트랙 탐색
+      // 정지 상태에서 외부 링 회전 = 트랙 탐색 (터치 seek보다 느린 감도)
       const engine = getDeckEngine(deckId)
-      const deltaSec = direction * JOG_TICK_SEC
+      const deltaSec = direction * JOG_OUTER_TICK_SEC
       const next = Math.max(0, Math.min(deck.track.duration, deck.position + deltaSec))
       engine.seek(next)
       useDeckStore.getState().setPosition(deckId, next)
