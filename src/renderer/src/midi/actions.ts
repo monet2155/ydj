@@ -22,10 +22,10 @@ export async function togglePlay(deckId: DeckId): Promise<void> {
 }
 
 export function cueDeck(deckId: DeckId): void {
-  // Serato 식 동작: 정지 상태에서 누르면 현재 위치를 임시 cue로, 재생 중이면 cue로 점프 후 정지
-  // SPEC §3.2의 "큐 버튼"과 단순 구현 — 일단 cue=0(트랙 시작) 점프로 근사
-  // (정식 임시 cue 포인트 저장은 추후 별도 구현)
+  // Serato 식 단순 동작: 트랙 시작으로 점프 + 정지.
+  // engine.seek는 재생 중이면 새 위치에서 자동 재시작하므로 먼저 pause 후 seek.
   const engine = getDeckEngine(deckId)
+  engine.pause()
   engine.seek(0)
   useDeckStore.getState().setPosition(deckId, 0)
   useDeckStore.getState().setPlaying(deckId, false)
