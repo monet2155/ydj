@@ -108,13 +108,13 @@ export class MidiMapper {
       return
     }
 
-    // PFL/Cue Monitor — TODO: 실제 헤드폰 모니터링이 구현되면 연결
+    // PFL/Cue Monitor — 헤드폰 모니터링이 엔진에 미구현. 별도 트랙(MIDI_PLAN).
     if (action === 'deck.A.cueMonitor' || action === 'deck.B.cueMonitor') return
 
     // Load — 현재 선택된 라이브러리 트랙을 그 덱에 로드
     if (action === 'deck.A.load') return loadSelectedToDeck('A')
     if (action === 'deck.B.load') return loadSelectedToDeck('B')
-    // Browse press — 선택 트랙 활성화/포커스 정도. 일단 no-op.
+    // Browse press — UI 동작 미정. 일단 no-op.
     if (action === 'browse.press') return
   }
 
@@ -149,8 +149,9 @@ export class MidiMapper {
     if (action === 'deck.B.pitch') return setPitchPercent('B', (norm - 0.5) * 20)
     // Master / Headphone
     if (action === 'mixer.master') return setMasterVolume(norm)
-    if (action === 'mixer.headphone.mix') return // TODO: cue mix
-    // Level — 4단계 (a)에선 deck volume과 별도 트림 미구현, 무시
+    // Headphone Mix — cue bus 미구현. 별도 트랙(MIDI_PLAN).
+    if (action === 'mixer.headphone.mix') return
+    // Level — pre-fader trim 미구현. 별도 트랙(MIDI_PLAN).
     if (action === 'deck.A.level' || action === 'deck.B.level') return
     // EQ
     if (action === 'deck.A.eq.high') return setEqBand('A', 'high', norm)
